@@ -237,33 +237,21 @@ main h4 {
 /* ── Lecture resource links ── */
 .lecture-links {
   display: flex;
-  gap: 8px;
+  gap: 16px;
   margin-bottom: 28px;
   flex-wrap: wrap;
+  font-size: 14px;
 }
 .res-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: var(--radius);
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--fg-light) !important;
   text-decoration: none !important;
-  transition: background .12s;
+  transition: color .12s;
 }
-.res-link:first-child {
-  background: var(--blue-bg);
-  color: var(--blue-fg) !important;
+.res-link:hover {
+  color: var(--fg) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
 }
-.res-link:first-child::before { content: '📄'; font-size: 14px; }
-.res-link:first-child:hover { background: #c4dae8; }
-.res-link:nth-child(2) {
-  background: var(--red-bg);
-  color: var(--red-fg) !important;
-}
-.res-link:nth-child(2)::before { content: '▶️'; font-size: 12px; }
-.res-link:nth-child(2):hover { background: #f5d3ce; }
 
 /* ── Prose ── */
 main p { margin: 4px 0 8px; }
