@@ -9,32 +9,7 @@
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
 <body>
-<nav class="sidebar" id="sidebar">
-  <div class="logo">CS<span>336</span> Notes</div>
-  <a href="index.html">Overview</a>
-  <a href="assignments.html">Assignments</a>
-
-  <h2>Lectures</h2>
-  <a href="lec01.html"><span class="num">01</span>Tokenization</a>
-  <a href="lec02.html"><span class="num">02</span>PyTorch &amp; Resources</a>
-  <a href="lec03.html"><span class="num">03</span>Architectures</a>
-  <a href="lec04.html" class="active"><span class="num">04</span>Attention &amp; MoE</a>
-  <a href="lec05.html"><span class="num">05</span>GPUs &amp; TPUs</a>
-  <a href="lec06.html"><span class="num">06</span>Kernels &amp; Triton</a>
-  <a href="lec07.html"><span class="num">07</span>Parallelism I</a>
-  <a href="lec08.html"><span class="num">08</span>Parallelism II</a>
-  <a href="lec09.html"><span class="num">09</span>Scaling Laws I</a>
-  <a href="lec10.html"><span class="num">10</span>Inference</a>
-  <a href="lec11.html"><span class="num">11</span>Scaling Laws II</a>
-  <a href="lec12.html"><span class="num">12</span>Evaluation</a>
-  <a href="lec13.html"><span class="num">13</span>Data: Sources</a>
-  <a href="lec14.html"><span class="num">14</span>Data: Processing</a>
-  <a href="lec15.html"><span class="num">15</span>SFT &amp; RLHF</a>
-  <a href="lec16.html"><span class="num">16</span>RLVR</a>
-  <a href="lec17.html"><span class="num">17</span>Multimodality</a>
-
-  <a href="https://github.com/Ychen463/CS336-Language-Modeling-from-Scratch" target="_blank" class="ghside">GitHub</a>
-</nav>
+<nav class="sidebar" id="sidebar"></nav>
 
 <main>
   <p style="font-size:14px;color:var(--muted);">CS336 Notes / Lecture 04</p>
@@ -81,14 +56,6 @@
   <div class="pager"><a href="lec03.html"><span class="dir">Previous</span><span class="title">Architectures & Hyperparameters</span></a><a href="lec05.html" style="text-align:right"><span class="dir">Next</span><span class="title">GPUs & TPUs</span></a></div>
 </main>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const btn = document.createElement('button');
-  btn.className = 'menu-btn';
-  btn.textContent = '\u2630';
-  btn.onclick = function() { document.getElementById('sidebar').classList.toggle('open'); };
-  document.body.appendChild(btn);
-});
-</script>
+<script src="nav.js"></script>
 </body>
 </html>
