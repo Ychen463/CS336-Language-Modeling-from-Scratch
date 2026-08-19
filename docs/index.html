@@ -1,280 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CS336: Language Modeling from Scratch - Study Tracker</title>
-    <style>
-        :root {
-            --bg: #0d1117;
-            --card-bg: #161b22;
-            --border: #30363d;
-            --text: #e6edf3;
-            --text-muted: #8b949e;
-            --accent: #58a6ff;
-            --green: #3fb950;
-            --yellow: #d29922;
-            --red: #f85149;
-            --purple: #bc8cff;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 2rem;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        h1 { font-size: 2rem; margin-bottom: 0.3rem; }
-        .subtitle { color: var(--text-muted); margin-bottom: 2rem; font-size: 1.05rem; }
-        .subtitle a { color: var(--accent); text-decoration: none; }
-        .subtitle a:hover { text-decoration: underline; }
-
-        /* Progress bar */
-        .overall-progress { margin-bottom: 2.5rem; }
-        .overall-progress h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .progress-bar-bg {
-            background: var(--border);
-            border-radius: 8px;
-            height: 14px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            background: linear-gradient(90deg, var(--green), var(--accent));
-            height: 100%;
-            border-radius: 8px;
-            transition: width 0.5s;
-        }
-        .progress-label { color: var(--text-muted); font-size: 0.85rem; margin-top: 0.3rem; }
-
-        /* Study Plan */
-        .section-title {
-            font-size: 1.3rem;
-            margin: 2rem 0 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .week-grid { display: grid; gap: 1rem; }
-        .week-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1.2rem 1.5rem;
-            display: grid;
-            grid-template-columns: 80px 1fr 1fr auto;
-            align-items: center;
-            gap: 1rem;
-        }
-        .week-label {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: var(--accent);
-        }
-        .week-topic { font-size: 0.95rem; }
-        .week-assignment { font-size: 0.9rem; color: var(--purple); }
-        .week-hours { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
-
-        .status {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.78rem;
-            font-weight: 600;
-        }
-        .status-not-started { background: var(--border); color: var(--text-muted); }
-        .status-in-progress { background: #d299221a; color: var(--yellow); border: 1px solid var(--yellow); }
-        .status-done { background: #3fb9501a; color: var(--green); border: 1px solid var(--green); }
-
-        /* Lecture table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 0.5rem;
-        }
-        th, td {
-            text-align: left;
-            padding: 0.6rem 0.8rem;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-        }
-        th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
-        td a { color: var(--accent); text-decoration: none; }
-        td a:hover { text-decoration: underline; }
-
-        /* Resources */
-        .resources {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-        .resource-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1rem 1.2rem;
-        }
-        .resource-card h3 { font-size: 0.95rem; margin-bottom: 0.3rem; }
-        .resource-card p { font-size: 0.85rem; color: var(--text-muted); }
-        .resource-card a { color: var(--accent); text-decoration: none; }
-
-        @media (max-width: 700px) {
-            .week-card { grid-template-columns: 1fr; }
-            body { padding: 1rem; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CS336 Notes — Language Modeling from Scratch</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<nav class="sidebar" id="sidebar">
+  <h2>Home</h2>
+  <a href="index.html" class="active">Overview</a>
+  <a href="assignments.html">Assignments</a>
 
-<h1>CS336: Language Modeling from Scratch</h1>
-<p class="subtitle">
-    Self-study tracker &mdash;
-    <a href="https://cs336.stanford.edu/" target="_blank">Stanford CS336 (Spring 2026)</a>
-    &mdash; Percy Liang &amp; Tatsu Hashimoto
-</p>
+  <h2>Lectures</h2>
+  <a href="lec01.html"><span class="num">01</span>Tokenization</a>
+  <a href="lec02.html"><span class="num">02</span>PyTorch &amp; Resources</a>
+  <a href="lec03.html"><span class="num">03</span>Architectures</a>
+  <a href="lec04.html"><span class="num">04</span>Attention &amp; MoE</a>
+  <a href="lec05.html"><span class="num">05</span>GPUs &amp; TPUs</a>
+  <a href="lec06.html"><span class="num">06</span>Kernels &amp; Triton</a>
+  <a href="lec07.html"><span class="num">07</span>Parallelism I</a>
+  <a href="lec08.html"><span class="num">08</span>Parallelism II</a>
+  <a href="lec09.html"><span class="num">09</span>Scaling Laws I</a>
+  <a href="lec10.html"><span class="num">10</span>Inference</a>
+  <a href="lec11.html"><span class="num">11</span>Scaling Laws II</a>
+  <a href="lec12.html"><span class="num">12</span>Evaluation</a>
+  <a href="lec13.html"><span class="num">13</span>Data: Sources</a>
+  <a href="lec14.html"><span class="num">14</span>Data: Processing</a>
+  <a href="lec15.html"><span class="num">15</span>SFT &amp; RLHF</a>
+  <a href="lec16.html"><span class="num">16</span>RLVR</a>
+  <a href="lec17.html"><span class="num">17</span>Multimodality</a>
 
-<!-- Overall Progress -->
-<div class="overall-progress">
-    <h2>Overall Progress</h2>
-    <div class="progress-bar-bg">
-        <div class="progress-bar-fill" style="width: 0%;"></div>
-    </div>
-    <p class="progress-label">0 / 6 weeks completed</p>
-</div>
+  <a href="https://github.com/Ychen463/CS336-Language-Modeling-from-Scratch" target="_blank" class="ghside">GitHub</a>
+</nav>
 
-<!-- 6-Week Study Plan -->
-<h2 class="section-title">6-Week Study Plan (40 hrs/week)</h2>
-<div class="week-grid">
+<main>
+  <div class="hero">
+    <h1>Stanford CS336 Notes</h1>
+    <p>Personal study notes for <a href="https://cs336.stanford.edu/" target="_blank">CS336: Language Modeling from Scratch</a> (Spring 2026), taught by Percy Liang &amp; Tatsu Hashimoto. Covering tokenization, architectures, MoE, GPUs &amp; kernels, parallelism, scaling laws, inference, evaluation, data, and alignment.</p>
+  </div>
 
-    <div class="week-card">
-        <span class="week-label">Week 1</span>
-        <span class="week-topic">Lec 01-04: Tokenization, PyTorch, Architectures, Attention, MoE</span>
-        <span class="week-assignment">Assignment 1: BPE, Transformer, AdamW, Training</span>
-        <span class="status status-not-started">Not Started</span>
-    </div>
-    <div class="week-card">
-        <span class="week-label">Week 2</span>
-        <span class="week-topic">Lec 05-08: GPUs/TPUs, Kernels, Triton, Parallelism</span>
-        <span class="week-assignment">Assignment 2: Fused RMSNorm, DDP, Optimizer Sharding</span>
-        <span class="status status-not-started">Not Started</span>
-    </div>
-    <div class="week-card">
-        <span class="week-label">Week 3</span>
-        <span class="week-topic">Lec 09-11: Scaling Laws, Inference</span>
-        <span class="week-assignment">Assignment 3: Scaling Experiments, Fit &amp; Extrapolate</span>
-        <span class="status status-not-started">Not Started</span>
-    </div>
-    <div class="week-card">
-        <span class="week-label">Week 4</span>
-        <span class="week-topic">Lec 12-14: Evaluation, Data Sources, Filtering, Dedup</span>
-        <span class="week-assignment">Assignment 4: HTML&rarr;Text, Classifiers, MinHash Dedup</span>
-        <span class="status status-not-started">Not Started</span>
-    </div>
-    <div class="week-card">
-        <span class="week-label">Week 5</span>
-        <span class="week-topic">Lec 15-17: SFT, RLHF, RLVR, Multimodality</span>
-        <span class="week-assignment">Assignment 5: DPO, GRPO</span>
-        <span class="status status-not-started">Not Started</span>
-    </div>
-    <div class="week-card">
-        <span class="week-label">Week 6</span>
-        <span class="week-topic">Review &amp; consolidation</span>
-        <span class="week-assignment">Revisit weak areas, clean up notes, wrap up</span>
-        <span class="status status-not-started">Not Started</span>
-    </div>
+  <!-- Study Plan -->
+  <h2>6-Week Study Plan</h2>
+  <div class="grid">
+    <a href="lec01.html" class="card">
+      <span class="n">WEEK 1</span>
+      <h3>Basics</h3>
+      <p>Lec 01-04 &middot; Assignment 1<br>Tokenization, Transformer, AdamW, Training</p>
+    </a>
+    <a href="lec05.html" class="card">
+      <span class="n">WEEK 2</span>
+      <h3>Systems</h3>
+      <p>Lec 05-08 &middot; Assignment 2<br>GPUs, Triton Kernels, Parallelism, DDP</p>
+    </a>
+    <a href="lec09.html" class="card">
+      <span class="n">WEEK 3</span>
+      <h3>Scaling</h3>
+      <p>Lec 09-11 &middot; Assignment 3<br>Scaling Laws, Inference, Extrapolation</p>
+    </a>
+    <a href="lec12.html" class="card">
+      <span class="n">WEEK 4</span>
+      <h3>Data</h3>
+      <p>Lec 12-14 &middot; Assignment 4<br>Evaluation, Filtering, MinHash Dedup</p>
+    </a>
+    <a href="lec15.html" class="card">
+      <span class="n">WEEK 5</span>
+      <h3>Alignment</h3>
+      <p>Lec 15-17 &middot; Assignment 5<br>SFT, RLHF, DPO, GRPO, Multimodality</p>
+    </a>
+    <a href="assignments.html" class="card">
+      <span class="n">WEEK 6</span>
+      <h3>Review</h3>
+      <p>Revisit weak areas, consolidate notes, wrap up</p>
+    </a>
+  </div>
 
-</div>
+  <!-- Feature Cards -->
+  <h2>Quick Links</h2>
+  <div class="grid">
+    <a href="assignments.html" class="feature">
+      <div class="ft2">Assignments</div>
+      <div class="fd">5 assignments: BPE, Transformer, Triton, DDP, Scaling Laws, Data Pipeline, DPO, GRPO. Notes and key takeaways from each.</div>
+    </a>
+    <a href="https://www.youtube.com/watch?v=JuoVZkPBiKk&list=PLoROMvodv4rMqXOcazWaTUHhq-yembLCV" target="_blank" class="feature">
+      <div class="ft2">YouTube Lectures</div>
+      <div class="fd">Full lecture recordings from the Spring 2025 offering.</div>
+    </a>
+    <a href="https://cs336.stanford.edu/" target="_blank" class="feature">
+      <div class="ft2">Course Website</div>
+      <div class="fd">Official CS336 site with all materials, slides, and assignment repos.</div>
+    </a>
+  </div>
 
-<!-- Lectures -->
-<h2 class="section-title">Lectures</h2>
-<table>
-    <thead>
-        <tr><th>#</th><th>Topic</th><th>Instructor</th><th>Format</th></tr>
-    </thead>
-    <tbody>
-        <tr><td>01</td><td>Overview, Tokenization</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_01">.py</a></td></tr>
-        <tr><td>02</td><td>PyTorch, Resource Accounting</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_02">.py</a></td></tr>
-        <tr><td>03</td><td>Architectures, Hyperparameters</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_03.pdf">PDF</a></td></tr>
-        <tr><td>04</td><td>Attention Alternatives, MoE</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_04.pdf">PDF</a></td></tr>
-        <tr><td>05</td><td>GPUs, TPUs</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_05.pdf">PDF</a></td></tr>
-        <tr><td>06</td><td>Kernels, Triton</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_06">.py</a></td></tr>
-        <tr><td>07</td><td>Parallelism</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_07">.py</a></td></tr>
-        <tr><td>08</td><td>Parallelism</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_08.pdf">PDF</a></td></tr>
-        <tr><td>09</td><td>Scaling Laws</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_09.pdf">PDF</a></td></tr>
-        <tr><td>10</td><td>Inference</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_10">.py</a></td></tr>
-        <tr><td>11</td><td>Scaling Laws</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_11.pdf">PDF</a></td></tr>
-        <tr><td>12</td><td>Evaluation</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_12">.py</a></td></tr>
-        <tr><td>13</td><td>Data (Sources, Datasets)</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_13">.py</a></td></tr>
-        <tr><td>14</td><td>Data (Filtering, Dedup, Mixing)</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_14">.py</a></td></tr>
-        <tr><td>15</td><td>Mid/Post-training (SFT, RLHF)</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_15.pdf">PDF</a></td></tr>
-        <tr><td>16</td><td>Post-training (RLVR)</td><td>Tatsu</td><td><a href="https://github.com/stanford-cs336/lectures/blob/main/lecture_16.pdf">PDF</a></td></tr>
-        <tr><td>17</td><td>Alignment, Multimodality</td><td>Percy</td><td><a href="https://cs336.stanford.edu/lectures/?trace=lecture_17">.py</a></td></tr>
-    </tbody>
-</table>
+  <!-- Lecture Cards -->
+  <h2>Lecture Notes</h2>
+  <div class="grid">
+    <a href="lec01.html" class="card">
+      <span class="n">LECTURE 01</span>
+      <h3>Overview &amp; Tokenization</h3>
+      <p>Course intro, BPE tokenizer, Unicode, bytes, compression ratio.</p>
+    </a>
+    <a href="lec02.html" class="card">
+      <span class="n">LECTURE 02</span>
+      <h3>PyTorch &amp; Resource Accounting</h3>
+      <p>Einops, FLOPs counting, memory estimation, arithmetic intensity.</p>
+    </a>
+    <a href="lec03.html" class="card">
+      <span class="n">LECTURE 03</span>
+      <h3>Architectures &amp; Hyperparameters</h3>
+      <p>Transformer variants, activation functions, positional encodings, normalization.</p>
+    </a>
+    <a href="lec04.html" class="card">
+      <span class="n">LECTURE 04</span>
+      <h3>Attention Alternatives &amp; MoE</h3>
+      <p>GQA, MLA, linear attention, Mamba, mixture of experts, load balancing.</p>
+    </a>
+    <a href="lec05.html" class="card">
+      <span class="n">LECTURE 05</span>
+      <h3>GPUs &amp; TPUs</h3>
+      <p>GPU architecture, memory hierarchy, SMs, warps, roofline analysis.</p>
+    </a>
+    <a href="lec06.html" class="card">
+      <span class="n">LECTURE 06</span>
+      <h3>Kernels &amp; Triton</h3>
+      <p>Custom kernels, operator fusion, tiling, FlashAttention, Triton programming.</p>
+    </a>
+    <a href="lec07.html" class="card">
+      <span class="n">LECTURE 07</span>
+      <h3>Parallelism I</h3>
+      <p>Data parallelism, collective operations, all-reduce, gradient accumulation.</p>
+    </a>
+    <a href="lec08.html" class="card">
+      <span class="n">LECTURE 08</span>
+      <h3>Parallelism II</h3>
+      <p>Tensor, pipeline, sequence, expert parallelism. ZeRO, FSDP.</p>
+    </a>
+    <a href="lec09.html" class="card">
+      <span class="n">LECTURE 09</span>
+      <h3>Scaling Laws I</h3>
+      <p>Kaplan scaling laws, Chinchilla, ISOFLOP curves, compute-optimal training.</p>
+    </a>
+    <a href="lec10.html" class="card">
+      <span class="n">LECTURE 10</span>
+      <h3>Inference</h3>
+      <p>Prefill vs decode, KV cache, speculative decoding, quantization.</p>
+    </a>
+    <a href="lec11.html" class="card">
+      <span class="n">LECTURE 11</span>
+      <h3>Scaling Laws II</h3>
+      <p>Hyperparameter transfer, muP, scaling recipes, predictability.</p>
+    </a>
+    <a href="lec12.html" class="card">
+      <span class="n">LECTURE 12</span>
+      <h3>Evaluation</h3>
+      <p>Perplexity, benchmarks, contamination, LM-as-judge, leaderboards.</p>
+    </a>
+    <a href="lec13.html" class="card">
+      <span class="n">LECTURE 13</span>
+      <h3>Data: Sources &amp; Datasets</h3>
+      <p>Common Crawl, The Pile, data sourcing, copyright, licensing.</p>
+    </a>
+    <a href="lec14.html" class="card">
+      <span class="n">LECTURE 14</span>
+      <h3>Data: Processing</h3>
+      <p>HTML extraction, quality filtering, deduplication, MinHash, data mixing.</p>
+    </a>
+    <a href="lec15.html" class="card">
+      <span class="n">LECTURE 15</span>
+      <h3>SFT &amp; RLHF</h3>
+      <p>Supervised fine-tuning, reward models, PPO, InstructGPT pipeline.</p>
+    </a>
+    <a href="lec16.html" class="card">
+      <span class="n">LECTURE 16</span>
+      <h3>RLVR</h3>
+      <p>DPO, GRPO, verifiable rewards, reasoning RL.</p>
+    </a>
+    <a href="lec17.html" class="card">
+      <span class="n">LECTURE 17</span>
+      <h3>Multimodality</h3>
+      <p>Vision encoders, CLIP, visual language models, tokenization for images.</p>
+    </a>
+  </div>
 
-<!-- Assignments -->
-<h2 class="section-title">Assignments</h2>
-<table>
-    <thead>
-        <tr><th>#</th><th>Topic</th><th>Key Tasks</th><th>Links</th></tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>1</td><td>Basics</td>
-            <td>BPE tokenizer, Transformer, cross-entropy, AdamW, training loop</td>
-            <td><a href="https://github.com/stanford-cs336/assignment1-basics">Code</a> &middot; <a href="https://github.com/stanford-cs336/assignment1-basics/blob/main/cs336_assignment1_basics.pdf">PDF</a></td>
-        </tr>
-        <tr>
-            <td>2</td><td>Systems</td>
-            <td>Fused RMSNorm (Triton), DDP, optimizer state sharding</td>
-            <td><a href="https://github.com/stanford-cs336/assignment2-systems">Code</a> &middot; <a href="https://github.com/stanford-cs336/assignment2-systems/blob/main/cs336_assignment2_systems.pdf">PDF</a></td>
-        </tr>
-        <tr>
-            <td>3</td><td>Scaling</td>
-            <td>Run experiments, fit scaling laws, extrapolate</td>
-            <td><a href="https://github.com/stanford-cs336/assignment3-scaling">Code</a> &middot; <a href="https://github.com/stanford-cs336/assignment3-scaling/blob/main/cs336_assignment3_scaling.pdf">PDF</a></td>
-        </tr>
-        <tr>
-            <td>4</td><td>Data</td>
-            <td>HTML&rarr;text, quality classifiers, MinHash dedup</td>
-            <td><a href="https://github.com/stanford-cs336/assignment4-data">Code</a> &middot; <a href="https://github.com/stanford-cs336/assignment4-data/blob/main/cs336_assignment4_data.pdf">PDF</a></td>
-        </tr>
-        <tr>
-            <td>5</td><td>Alignment</td>
-            <td>DPO, GRPO</td>
-            <td><a href="https://github.com/stanford-cs336/assignment5-alignment">Code</a> &middot; <a href="https://github.com/stanford-cs336/assignment5-alignment/blob/main/cs336_spring2026_assignment5_alignment.pdf">PDF</a></td>
-        </tr>
-    </tbody>
-</table>
+</main>
 
-<!-- Resources -->
-<h2 class="section-title">Resources</h2>
-<div class="resources">
-    <div class="resource-card">
-        <h3><a href="https://cs336.stanford.edu/" target="_blank">Course Website</a></h3>
-        <p>Official CS336 site with all materials</p>
-    </div>
-    <div class="resource-card">
-        <h3><a href="https://www.youtube.com/watch?v=JuoVZkPBiKk&list=PLoROMvodv4rMqXOcazWaTUHhq-yembLCV" target="_blank">YouTube Lectures</a></h3>
-        <p>Full lecture recordings from Spring 2025</p>
-    </div>
-    <div class="resource-card">
-        <h3><a href="https://github.com/stanford-cs336/lectures" target="_blank">Lectures Repo</a></h3>
-        <p>All lecture source files (.py and .pdf)</p>
-    </div>
-    <div class="resource-card">
-        <h3>Compute: RunPod</h3>
-        <p>GPU instances for assignments</p>
-    </div>
-</div>
-
-<br>
-<p style="text-align:center; color: var(--text-muted); font-size: 0.8rem; margin-top: 2rem;">
-    Built by <a href="https://github.com/Ychen463" style="color:var(--accent);">Ychen463</a>
-</p>
-
+<script>
+// Mobile sidebar toggle
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.createElement('button');
+  btn.className = 'menu-btn';
+  btn.textContent = '\u2630';
+  btn.onclick = function() { document.getElementById('sidebar').classList.toggle('open'); };
+  document.body.appendChild(btn);
+});
+</script>
 </body>
 </html>
