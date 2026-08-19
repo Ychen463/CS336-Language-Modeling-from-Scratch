@@ -371,6 +371,31 @@ figcaption .ft {
   font-weight: 600;
 }
 
+/* ── Lecture resource links ── */
+.lecture-links {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.res-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: opacity .15s;
+  color: #fff !important;
+  background: var(--accent);
+}
+.res-link:nth-child(2) {
+  background: #dc2626;
+}
+.res-link:hover { opacity: .85; }
+
 /* ── TL;DR ── */
 .tldr {
   background: var(--accent-soft);
