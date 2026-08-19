@@ -113,15 +113,16 @@ body {
 /* ── Main content ── */
 main {
   flex: 1;
-  max-width: 880px;
-  padding: 44px 56px 80px;
+  padding: 44px 64px 80px;
   min-width: 0;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 /* ── Hero ── */
 .hero { margin-bottom: 40px; }
 .hero h1 {
-  font-size: 36px;
+  font-size: 42px;
   font-weight: 800;
   line-height: 1.15;
   margin-bottom: 14px;
@@ -132,19 +133,19 @@ main {
   background-clip: text;
 }
 .hero p {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--muted);
   line-height: 1.7;
-  max-width: 640px;
+  max-width: 780px;
 }
 .hero a { color: var(--accent); text-decoration: none; }
 .hero a:hover { text-decoration: underline; }
 
 /* ── Section headings ── */
 main > h2 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  margin: 44px 0 16px;
+  margin: 48px 0 18px;
   color: var(--fg);
   letter-spacing: -.2px;
 }
@@ -173,9 +174,9 @@ main h4 {
 /* ── Grid ── */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
-  margin-bottom: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 12px;
 }
 
 /* ── Cards ── */
@@ -464,6 +465,37 @@ figcaption .ft {
   box-shadow: 0 2px 12px rgba(0,0,0,.2);
 }
 
+/* ── Large screens ── */
+@media (min-width: 1600px) {
+  main { max-width: 1280px; padding: 52px 80px 100px; }
+  .hero h1 { font-size: 48px; }
+  .hero p { font-size: 18px; max-width: 860px; }
+  main > h2 { font-size: 24px; }
+  main h3 { font-size: 19px; }
+  body { font-size: 17px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+  .card { padding: 24px; }
+  .card h3 { font-size: 18px; }
+  .card p { font-size: 14.5px; }
+  .feature { padding: 24px; }
+  .ft2 { font-size: 16px; }
+  .fd { font-size: 14.5px; }
+  .concepts { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  pre { padding: 22px 28px; font-size: 14px; }
+  pre code { font-size: 14px; }
+  .tldr { padding: 22px 28px; }
+  .tldr li { font-size: 15.5px; }
+  table { font-size: 15.5px; }
+  th, td { padding: 12px 16px; }
+}
+
+@media (min-width: 2000px) {
+  main { max-width: 1440px; padding: 60px 96px 120px; }
+  .hero h1 { font-size: 52px; }
+  .grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+}
+
+/* ── Mobile ── */
 @media (max-width: 860px) {
   .sidebar {
     display: none;
