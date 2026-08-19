@@ -4,15 +4,16 @@ Self-study of [Stanford CS336 (Spring 2026)](https://cs336.stanford.edu/) — bu
 
 Instructors: Percy Liang & Tatsu Hashimoto
 
-## Course Structure
+## 6-Week Study Plan (40 hrs/week)
 
 | Week | Lectures | Assignment | Focus |
 |------|----------|------------|-------|
-| 1-2 | 01-04 | Assignment 1 | Tokenization, Transformer, Training |
-| 3-4 | 05-08 | Assignment 2 | GPUs, Kernels, Parallelism |
-| 5-6 | 09-11 | Assignment 3 | Scaling Laws |
-| 7-8 | 12-14 | Assignment 4 | Evaluation, Data Processing |
-| 9-10 | 15-17 | Assignment 5 | Alignment (DPO, GRPO) |
+| 1 | 01-04 | Assignment 1 | Tokenization, Transformer, AdamW, Training |
+| 2 | 05-08 | Assignment 2 | GPUs, Kernels, Triton, Parallelism |
+| 3 | 09-11 | Assignment 3 | Scaling Laws, Inference |
+| 4 | 12-14 | Assignment 4 | Evaluation, Data Processing |
+| 5 | 15-17 | Assignment 5 | Alignment (DPO, GRPO) |
+| 6 | Review | — | Revisit weak areas, consolidate notes |
 
 ## Repository Structure
 
