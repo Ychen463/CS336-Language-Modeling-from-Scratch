@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Assignment 2: Systems — CS336 Notes</title>
+<link rel="stylesheet" href="style.css">
+<script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<nav class="sidebar" id="sidebar"></nav>
+
+<main>
+  <h1 style="font-size:30px;margin-bottom:4px;">Assignment 2: Systems</h1>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">Lectures 05–08 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment2-systems" target="_blank">Starter Code ↗</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment2-systems/blob/main/cs336_assignment2_systems.pdf" target="_blank">PDF ↗</a></p>
+
+  <div id="toc"></div>
+
+  <div class="tldr">
+    <h3>TL;DR</h3>
+    <ul>
+      <li>Write a fused RMSNorm kernel in Triton — learn GPU programming and operator fusion.<br><span class="zh">用 Triton 写融合 RMSNorm 核函数——学习 GPU 编程和算子融合。</span></li>
+      <li>Implement distributed data parallel (DDP) training and optimizer state sharding (ZeRO-1).<br><span class="zh">实现分布式数据并行训练和优化器状态分片（ZeRO-1）。</span></li>
+      <li>Benchmark and profile with Nsight to understand real GPU behavior.<br><span class="zh">用 Nsight 分析实际 GPU 行为。</span></li>
+    </ul>
+  </div>
+
+  <h2 id="key-concepts">Key Concepts</h2>
+  <div class="concepts">
+    <!-- Add concept cards as you study -->
+  </div>
+
+  <h2 id="notes">Notes</h2>
+
+  <h3 id="deliverables">Core Deliverables</h3>
+  <ul>
+    <li><strong>Fused RMSNorm kernel in Triton</strong> — combine normalization operations into a single GPU kernel<span class="zh">（Triton 融合 RMSNorm 核：将归一化操作合并为一个 GPU 核）</span></li>
+    <li><strong>Distributed data parallel (DDP)</strong> — synchronize gradients across multiple GPUs via all-reduce<span class="zh">（分布式数据并行：通过 all-reduce 在多 GPU 间同步梯度）</span></li>
+    <li><strong>Optimizer state sharding (ZeRO-1)</strong> — each GPU only stores a shard of optimizer states<span class="zh">（优化器状态分片：每个 GPU 只存储一部分优化器状态）</span></li>
+    <li><strong>Benchmarking and profiling</strong> — use Nsight Systems to see real GPU utilization<span class="zh">（用 Nsight Systems 查看实际 GPU 利用率）</span></li>
+  </ul>
+
+  <h3 id="my-notes">My Notes &amp; Questions</h3>
+  <!-- Add your personal notes here -->
+
+  <div class="pager">
+    <a href="a1.html"><span class="dir">Previous</span><span class="title">A1: Basics</span></a>
+    <a href="a3.html" style="text-align:right"><span class="dir">Next</span><span class="title">A3: Scaling</span></a>
+  </div>
+</main>
+
+<script src="nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Assignment 4: Data — CS336 Notes</title>
+<link rel="stylesheet" href="style.css">
+<script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<nav class="sidebar" id="sidebar"></nav>
+
+<main>
+  <h1 style="font-size:30px;margin-bottom:4px;">Assignment 4: Data</h1>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">Lectures 12–14 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment4-data" target="_blank">Starter Code ↗</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment4-data/blob/main/cs336_assignment4_data.pdf" target="_blank">PDF ↗</a></p>
+
+  <div id="toc"></div>
+
+  <div class="tldr">
+    <h3>TL;DR</h3>
+    <ul>
+      <li>Build a complete data pipeline: HTML → clean text → quality filtering → deduplication → mixing.<br><span class="zh">构建完整数据管道：HTML → 干净文本 → 质量过滤 → 去重 → 混合。</span></li>
+      <li>Implement MinHash deduplication to remove near-duplicate documents efficiently.<br><span class="zh">实现 MinHash 去重以高效移除近重复文档。</span></li>
+      <li>Leaderboard: minimize perplexity given a fixed token budget.<br><span class="zh">排行榜：在固定 token 预算下最小化困惑度。</span></li>
+    </ul>
+  </div>
+
+  <h2 id="key-concepts">Key Concepts</h2>
+  <div class="concepts">
+    <!-- Add concept cards as you study -->
+  </div>
+
+  <h2 id="notes">Notes</h2>
+
+  <h3 id="deliverables">Core Deliverables</h3>
+  <ul>
+    <li><strong>HTML → text extraction</strong> from Common Crawl (extract main content, remove boilerplate)<span class="zh">（从 Common Crawl 提取正文，去除模板内容）</span></li>
+    <li><strong>Quality classifier</strong> — train a classifier to identify high-quality text<span class="zh">（训练分类器识别高质量文本）</span></li>
+    <li><strong>Toxicity classifier</strong> — train a classifier to filter harmful content<span class="zh">（训练分类器过滤有害内容）</span></li>
+    <li><strong>MinHash deduplication</strong> — efficiently find and remove near-duplicate documents<span class="zh">（高效发现和移除近重复文档）</span></li>
+    <li><strong>Data mixing</strong> — optimize the ratio of different data sources<span class="zh">（优化不同数据来源的配比）</span></li>
+  </ul>
+
+  <h3 id="my-notes">My Notes &amp; Questions</h3>
+  <!-- Add your personal notes here -->
+
+  <div class="pager">
+    <a href="a3.html"><span class="dir">Previous</span><span class="title">A3: Scaling</span></a>
+    <a href="a5.html" style="text-align:right"><span class="dir">Next</span><span class="title">A5: Alignment</span></a>
+  </div>
+</main>
+
+<script src="nav.js"></script>
+</body>
+</html>

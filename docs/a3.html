@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Assignment 3: Scaling — CS336 Notes</title>
+<link rel="stylesheet" href="style.css">
+<script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<nav class="sidebar" id="sidebar"></nav>
+
+<main>
+  <h1 style="font-size:30px;margin-bottom:4px;">Assignment 3: Scaling</h1>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">Lectures 09–11 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment3-scaling" target="_blank">Starter Code ↗</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment3-scaling/blob/main/cs336_assignment3_scaling.pdf" target="_blank">PDF ↗</a></p>
+
+  <div id="toc"></div>
+
+  <div class="tldr">
+    <h3>TL;DR</h3>
+    <ul>
+      <li>Run training experiments at multiple scales, fit power-law scaling laws, extrapolate to larger compute budgets.<br><span class="zh">在多个规模上运行训练实验，拟合幂律缩放定律，外推到更大算力预算。</span></li>
+      <li>Predict loss before running expensive experiments — the goal is predictability, not just optimality.<br><span class="zh">在运行昂贵实验前预测损失——目标是可预测性，而非仅仅是最优性。</span></li>
+      <li>Leaderboard: minimize loss given a FLOPs budget.<br><span class="zh">排行榜：在给定 FLOPs 预算下最小化损失。</span></li>
+    </ul>
+  </div>
+
+  <h2 id="key-concepts">Key Concepts</h2>
+  <div class="concepts">
+    <!-- Add concept cards as you study -->
+  </div>
+
+  <h2 id="notes">Notes</h2>
+
+  <h3 id="deliverables">Core Deliverables</h3>
+  <ul>
+    <li><strong>Run training experiments</strong> at multiple scales (model size × tokens)<span class="zh">（在多个规模上运行训练实验）</span></li>
+    <li><strong>Fit power-law scaling laws</strong> to the gathered data points<span class="zh">（对收集的数据点拟合幂律缩放定律）</span></li>
+    <li><strong>Extrapolate</strong> optimal hyperparameters to larger compute budgets<span class="zh">（将最优超参数外推到更大算力预算）</span></li>
+    <li><strong>Predict loss</strong> before running the full-scale experiment (preregistered prediction)<span class="zh">（在运行全尺度实验前预测损失——预注册预测）</span></li>
+  </ul>
+
+  <h3 id="my-notes">My Notes &amp; Questions</h3>
+  <!-- Add your personal notes here -->
+
+  <div class="pager">
+    <a href="a2.html"><span class="dir">Previous</span><span class="title">A2: Systems</span></a>
+    <a href="a4.html" style="text-align:right"><span class="dir">Next</span><span class="title">A4: Data</span></a>
+  </div>
+</main>
+
+<script src="nav.js"></script>
+</body>
+</html>

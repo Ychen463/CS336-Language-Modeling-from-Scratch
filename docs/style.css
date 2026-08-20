@@ -93,6 +93,19 @@ body {
   flex-shrink: 0;
 }
 .sidebar a.active .num { color: rgba(255,255,255,.6); }
+.sidebar a.sidebar-assignment {
+  font-size: 12px;
+  color: var(--accent-mid);
+  padding: 4px 16px;
+  margin-top: -2px;
+  opacity: .85;
+}
+.sidebar a.sidebar-assignment:hover { opacity: 1; background: var(--side-hover); }
+.sidebar a.sidebar-assignment.active {
+  background: var(--accent);
+  color: #fff;
+  opacity: 1;
+}
 
 /* ── Top header bar (full-width) ── */
 .topbar {

@@ -1,29 +1,29 @@
 // Shared topbar, sidebar, and mobile menu logic
 (function () {
   var modules = [
-    { title: 'Basics', lectures: [
+    { title: 'Basics', assignment: ['a1', 'A1: Basics'], lectures: [
       ['01', 'Tokenization'],
       ['02', 'PyTorch &amp; Resources'],
       ['03', 'Architectures'],
       ['04', 'Attention &amp; MoE']
     ]},
-    { title: 'Systems', lectures: [
+    { title: 'Systems', assignment: ['a2', 'A2: Systems'], lectures: [
       ['05', 'GPUs &amp; TPUs'],
       ['06', 'Kernels &amp; Triton'],
       ['07', 'Parallelism I'],
       ['08', 'Parallelism II']
     ]},
-    { title: 'Scaling', lectures: [
+    { title: 'Scaling', assignment: ['a3', 'A3: Scaling'], lectures: [
       ['09', 'Scaling Laws I'],
       ['10', 'Inference'],
       ['11', 'Scaling Laws II']
     ]},
-    { title: 'Data', lectures: [
+    { title: 'Data', assignment: ['a4', 'A4: Data'], lectures: [
       ['12', 'Evaluation'],
       ['13', 'Data: Sources'],
       ['14', 'Data: Processing']
     ]},
-    { title: 'Alignment', lectures: [
+    { title: 'Alignment', assignment: ['a5', 'A5: Alignment'], lectures: [
       ['15', 'SFT &amp; RLHF'],
       ['16', 'RLVR'],
       ['17', 'Multimodality']
@@ -50,6 +50,11 @@
         }
       }
       if (pageName) break;
+      // Check assignment pages
+      if (modules[mi].assignment && page === modules[mi].assignment[0] + '.html') {
+        pageName = modules[mi].assignment[1].replace(/&amp;/g, '&');
+        break;
+      }
     }
   }
 
@@ -90,6 +95,13 @@
       var href = 'lec' + num + '.html';
       var cls = page === href ? ' class="active"' : '';
       html += '<a href="' + href + '"' + cls + '><span class="num">' + num + '</span>' + label + '</a>';
+    }
+    // Add assignment link under each module
+    if (modules[m].assignment) {
+      var aId = modules[m].assignment[0], aLabel = modules[m].assignment[1];
+      var aHref = aId + '.html';
+      var aCls = page === aHref ? ' class="active sidebar-assignment"' : ' class="sidebar-assignment"';
+      html += '<a href="' + aHref + '"' + aCls + '>' + aLabel + '</a>';
     }
   }
 

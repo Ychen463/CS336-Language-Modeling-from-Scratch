@@ -5,88 +5,42 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Assignments — CS336 Notes</title>
 <link rel="stylesheet" href="style.css">
-<script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}</script>
-<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 </head>
 <body>
 <nav class="sidebar" id="sidebar"></nav>
 
 <main>
   <h1 style="font-size:30px;margin-bottom:8px;">Assignments</h1>
-  <p>Implementation-heavy assignments where the real learning happens. Notes, key takeaways, and debugging insights from each.</p>
+  <p>5 implementation-heavy assignments where the real learning happens. Each covers a different module of the course.</p>
+  <p class="zh">5 个重实现的作业，真正的学习在这里发生。每个对应课程的一个模块。</p>
 
-  <!-- Assignment 1 -->
-  <h2>Assignment 1: Basics</h2>
-  <p><strong>Lectures:</strong> 01-04 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment1-basics" target="_blank">Starter Code</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment1-basics/blob/main/cs336_assignment1_basics.pdf" target="_blank">PDF</a></p>
-
-  <h3>Core Deliverables</h3>
-  <ul>
-    <li>BPE tokenizer from scratch (train + encode + decode)</li>
-    <li>Transformer language model (attention, RMSNorm, SwiGLU, RoPE)</li>
-    <li>Cross-entropy loss, AdamW optimizer</li>
-    <li>Training loop on TinyStories and OpenWebText</li>
-  </ul>
-
-  <h3>Notes</h3>
-  <!-- Add your notes here as you work through the assignment -->
-
-  <!-- Assignment 2 -->
-  <h2>Assignment 2: Systems</h2>
-  <p><strong>Lectures:</strong> 05-08 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment2-systems" target="_blank">Starter Code</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment2-systems/blob/main/cs336_assignment2_systems.pdf" target="_blank">PDF</a></p>
-
-  <h3>Core Deliverables</h3>
-  <ul>
-    <li>Fused RMSNorm kernel in Triton</li>
-    <li>Distributed data parallel (DDP) training</li>
-    <li>Optimizer state sharding (ZeRO-1)</li>
-    <li>Benchmarking and profiling with nsight</li>
-  </ul>
-
-  <h3>Notes</h3>
-  <!-- Add your notes here -->
-
-  <!-- Assignment 3 -->
-  <h2>Assignment 3: Scaling</h2>
-  <p><strong>Lectures:</strong> 09-11 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment3-scaling" target="_blank">Starter Code</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment3-scaling/blob/main/cs336_assignment3_scaling.pdf" target="_blank">PDF</a></p>
-
-  <h3>Core Deliverables</h3>
-  <ul>
-    <li>Run training experiments at multiple scales</li>
-    <li>Fit power-law scaling laws to data</li>
-    <li>Extrapolate to larger compute budgets</li>
-    <li>Predict loss before running full-scale experiments</li>
-  </ul>
-
-  <h3>Notes</h3>
-  <!-- Add your notes here -->
-
-  <!-- Assignment 4 -->
-  <h2>Assignment 4: Data</h2>
-  <p><strong>Lectures:</strong> 12-14 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment4-data" target="_blank">Starter Code</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment4-data/blob/main/cs336_assignment4_data.pdf" target="_blank">PDF</a></p>
-
-  <h3>Core Deliverables</h3>
-  <ul>
-    <li>Convert Common Crawl HTML to clean text</li>
-    <li>Train quality and toxicity classifiers</li>
-    <li>MinHash deduplication</li>
-    <li>Data mixing optimization</li>
-  </ul>
-
-  <h3>Notes</h3>
-  <!-- Add your notes here -->
-
-  <!-- Assignment 5 -->
-  <h2>Assignment 5: Alignment</h2>
-  <p><strong>Lectures:</strong> 15-17 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment5-alignment" target="_blank">Starter Code</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment5-alignment/blob/main/cs336_spring2026_assignment5_alignment.pdf" target="_blank">PDF</a></p>
-
-  <h3>Core Deliverables</h3>
-  <ul>
-    <li>Direct Preference Optimization (DPO)</li>
-    <li>Group Relative Preference Optimization (GRPO)</li>
-  </ul>
-
-  <h3>Notes</h3>
-  <!-- Add your notes here -->
+  <div class="grid">
+    <a href="a1.html" class="card">
+      <span class="n">BASICS</span>
+      <h3>Assignment 1</h3>
+      <p>BPE tokenizer, Transformer, AdamW, training loop. Train on TinyStories &amp; OpenWebText.</p>
+    </a>
+    <a href="a2.html" class="card">
+      <span class="n">SYSTEMS</span>
+      <h3>Assignment 2</h3>
+      <p>Fused RMSNorm kernel (Triton), DDP, optimizer sharding (ZeRO-1), profiling.</p>
+    </a>
+    <a href="a3.html" class="card">
+      <span class="n">SCALING</span>
+      <h3>Assignment 3</h3>
+      <p>Scaling laws, IsoFLOP experiments, hyperparameter extrapolation, loss prediction.</p>
+    </a>
+    <a href="a4.html" class="card">
+      <span class="n">DATA</span>
+      <h3>Assignment 4</h3>
+      <p>HTML→text, quality/toxicity classifiers, MinHash dedup, data mixing.</p>
+    </a>
+    <a href="a5.html" class="card">
+      <span class="n">ALIGNMENT</span>
+      <h3>Assignment 5</h3>
+      <p>Direct Preference Optimization (DPO), Group Relative Policy Optimization (GRPO).</p>
+    </a>
+  </div>
 
 </main>
 

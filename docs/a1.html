@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Assignment 1: Basics — CS336 Notes</title>
+<link rel="stylesheet" href="style.css">
+<script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<nav class="sidebar" id="sidebar"></nav>
+
+<main>
+  <h1 style="font-size:30px;margin-bottom:4px;">Assignment 1: Basics</h1>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">Lectures 01–04 &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment1-basics" target="_blank">Starter Code ↗</a> &nbsp;|&nbsp; <a href="https://github.com/stanford-cs336/assignment1-basics/blob/main/cs336_assignment1_basics.pdf" target="_blank">PDF ↗</a></p>
+
+  <div id="toc"></div>
+
+  <div class="tldr">
+    <h3>TL;DR</h3>
+    <ul>
+      <li>Build everything from scratch: BPE tokenizer, Transformer, AdamW optimizer, training loop — no high-level framework components.<br><span class="zh">从零构建一切：BPE 分词器、Transformer、AdamW 优化器、训练循环——不使用高级框架组件。</span></li>
+      <li>Train on TinyStories (small) and OpenWebText (large). Leaderboard: minimize perplexity in 45 minutes on a B200.<br><span class="zh">在 TinyStories（小）和 OpenWebText（大）上训练。排行榜：在 B200 上 45 分钟内最小化困惑度。</span></li>
+      <li>Resource accounting: understand FLOPs and memory usage of your model.<br><span class="zh">资源核算：理解模型的 FLOPs 和显存用量。</span></li>
+    </ul>
+  </div>
+
+  <h2 id="key-concepts">Key Concepts</h2>
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Tokenization</div>
+    <div class="concepts">
+      <div><strong>BPE Tokenizer</strong> — Train: start with 256 bytes, greedily merge most frequent pairs. Encode: apply merges in order. Must handle pre-tokenization (regex word splitting) and special tokens.<br><span class="zh">BPE 分词器——训练：从 256 字节开始，贪心合并最频繁的对。编码：按序应用合并。需处理预分词（正则切词）和特殊 token。</span></div>
+      <div><strong>Efficient BPE</strong> — Naive encoding loops over all merges (slow). Efficient version uses hash maps + priority queues to only apply relevant merges.<br><span class="zh">高效 BPE——朴素编码遍历所有合并规则（慢）。高效版本用 hash map + 优先队列只应用相关的合并。</span></div>
+    </div>
+  </div>
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Model Architecture</div>
+    <div class="concepts">
+      <div><strong>Transformer LM</strong> — Token embedding + position embedding → $N$ Transformer blocks (attention + FFN + residual + norm) → linear → softmax. Decoder-only, causal attention.<br><span class="zh">Transformer 语言模型——Token 嵌入 + 位置嵌入 → $N$ 个 Transformer block → 线性层 → softmax。仅解码器，因果注意力。</span></div>
+      <div><strong>RMSNorm</strong> — Simplified normalization: $\text{RMSNorm}(x) = x / \text{RMS}(x) \cdot \gamma$. Cheaper than LayerNorm (no mean subtraction).<br><span class="zh">RMSNorm——简化的归一化：不减均值，只除 RMS。比 LayerNorm 更便宜。</span></div>
+      <div><strong>SwiGLU</strong> — Activation function for FFN: $\text{SwiGLU}(x) = (\text{Swish}(xW_1)) \odot (xW_2)$. Gated linear unit with Swish activation. Better than ReLU in practice.<br><span class="zh">SwiGLU——FFN 的激活函数：门控线性单元 + Swish 激活。实践中优于 ReLU。</span></div>
+      <div><strong>RoPE</strong> — Rotary Position Embedding: encodes position by rotating Q/K vectors. Relative position info emerges naturally from the rotation angles.<br><span class="zh">RoPE——旋转位置编码：通过旋转 Q/K 向量编码位置。相对位置信息从旋转角度中自然产生。</span></div>
+    </div>
+  </div>
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Training</div>
+    <div class="concepts">
+      <div><strong>Cross-Entropy Loss</strong> — $\mathcal{L} = -\frac{1}{T}\sum_t \log p(x_{t+1} | x_{\leq t})$. Measures how well the model predicts the next token. Lower = better.<br><span class="zh">交叉熵损失——衡量模型预测下一个 token 的好坏程度。越低越好。</span></div>
+      <div><strong>AdamW</strong> — Adam optimizer with decoupled weight decay. Maintains per-parameter momentum ($m$) and variance ($v$) estimates. The standard optimizer for LLM training.<br><span class="zh">AdamW——解耦权重衰减的 Adam 优化器。维护每个参数的动量和方差估计。LLM 训练的标准优化器。</span></div>
+      <div><strong>Perplexity</strong> — $\text{PPL} = e^{\mathcal{L}}$. Exponential of cross-entropy loss. Interpretable as "how many tokens the model is uncertain between." Lower = better.<br><span class="zh">困惑度 = $e^{\text{交叉熵}}$。可理解为「模型在多少个 token 之间犹豫不决」。越低越好。</span></div>
+    </div>
+  </div>
+
+  <h2 id="notes">Notes</h2>
+
+  <h3 id="deliverables">Core Deliverables</h3>
+  <p class="zh">作业 1 需要从零实现以下内容（不使用框架现成组件）：</p>
+  <ul>
+    <li><strong>BPE tokenizer</strong> — efficient version with pre-tokenization (regex) and special tokens<span class="zh">（实现高效 BPE 分词器，含预分词和特殊 token 处理）</span></li>
+    <li><strong>Transformer language model</strong> — attention, RMSNorm, SwiGLU, RoPE<span class="zh">（实现 Transformer：注意力、RMSNorm、SwiGLU、RoPE）</span></li>
+    <li><strong>Cross-entropy loss</strong><span class="zh">（交叉熵损失函数）</span></li>
+    <li><strong>AdamW optimizer</strong><span class="zh">（AdamW 优化器）</span></li>
+    <li><strong>Training loop</strong> — full pipeline from data loading to gradient updates<span class="zh">（完整训练循环：从数据加载到梯度更新）</span></li>
+    <li><strong>Resource accounting</strong> — compute FLOPs and memory usage<span class="zh">（资源核算：计算 FLOPs 和显存用量）</span></li>
+  </ul>
+
+  <h3 id="datasets">Datasets</h3>
+  <ul>
+    <li><strong>TinyStories:</strong> small synthetic dataset of children's stories — fast to train on, good for debugging<span class="zh">（小型合成儿童故事数据集——训练快，适合调试）</span></li>
+    <li><strong>OpenWebText:</strong> large-scale web text dataset — the real challenge<span class="zh">（大规模网络文本数据集——真正的挑战）</span></li>
+  </ul>
+
+  <h3 id="leaderboard">Leaderboard</h3>
+  <p>Minimize OpenWebText perplexity given <strong>45 minutes on a B200 GPU</strong>. This forces you to think about efficiency — you can't just scale up, you need smart architectural and training choices.</p>
+  <p class="zh">在 B200 GPU 上 45 分钟内最小化 OpenWebText 困惑度。这迫使你思考效率——不能单纯靠堆算力，需要聪明的架构和训练决策。</p>
+
+  <blockquote>
+    Everything balances <strong>expressivity</strong> (represent complex dependencies), <strong>stability</strong> (keep norms in goldilocks zone), and <strong>efficiency</strong> (runs fast on hardware).<br>
+    <span class="zh">一切都在平衡<strong>表达力</strong>（建模复杂依赖）、<strong>稳定性</strong>（数值范围合理）、<strong>效率</strong>（硬件上跑得快）。</span>
+  </blockquote>
+
+  <h3 id="my-notes">My Notes &amp; Questions</h3>
+  <!-- Add your personal notes, debugging insights, and questions here -->
+
+  <div class="pager">
+    <a href="assignments.html"><span class="dir">Overview</span><span class="title">All Assignments</span></a>
+    <a href="a2.html" style="text-align:right"><span class="dir">Next</span><span class="title">A2: Systems</span></a>
+  </div>
+</main>
+
+<script src="nav.js"></script>
+</body>
+</html>
