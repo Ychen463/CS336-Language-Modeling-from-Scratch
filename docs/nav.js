@@ -140,10 +140,9 @@
   btn.onclick = function () { nav.classList.toggle('open'); };
   document.body.appendChild(btn);
 
-  // ── Auto-generate Table of Contents ──
-  // Scans <main> for headings with id attributes (h2, h3) and builds a TOC.
-  // Insert a <div id="toc"></div> where you want the TOC to appear.
   // ── Auto-generate Table of Contents (3-level: h2 > h3 > h4) ──
+  // Scans <main> for headings with id attributes and builds a numbered TOC.
+  // Numbering matches CSS counters (h2=1., h3=1.1, h4=1.1.1).
   var tocContainer = document.getElementById('toc');
   if (tocContainer && main) {
     var allH = main.querySelectorAll('h2[id], h3[id], h4[id]');
@@ -155,21 +154,29 @@
       }
     }
     if (headings.length > 0) {
+      // Compute section numbers to match CSS counters
+      var cnt = [0, 0, 0];
+      var nums = [];
+      for (var ni = 0; ni < headings.length; ni++) {
+        var t = headings[ni].tagName;
+        if (t === 'H2') { cnt[0]++; cnt[1] = 0; cnt[2] = 0; nums.push(cnt[0] + '.'); }
+        else if (t === 'H3') { cnt[1]++; cnt[2] = 0; nums.push(cnt[0] + '.' + cnt[1]); }
+        else { cnt[2]++; nums.push(cnt[0] + '.' + cnt[1] + '.' + cnt[2]); }
+      }
+      // Build TOC
       var tocHtml = '<details class="toc" open><summary>Table of Contents</summary><div class="toc-body">';
-      var level = 0; // 0=root, 2=h2, 3=h3, 4=h4
+      var level = 0;
       for (var hi = 0; hi < headings.length; hi++) {
         var h = headings[hi];
         var tag = h.tagName;
         var depth = tag === 'H2' ? 1 : tag === 'H3' ? 2 : 3;
-        // Close deeper lists
         while (level >= depth) { tocHtml += '</ul>'; level--; }
-        // Open lists to reach desired depth
         while (level < depth) {
           var cls = level === 0 ? 'toc-l1' : level === 1 ? 'toc-l2' : 'toc-l3';
           tocHtml += '<ul class="' + cls + '">';
           level++;
         }
-        tocHtml += '<li><a href="#' + h.id + '">' + h.textContent + '</a></li>';
+        tocHtml += '<li><a href="#' + h.id + '"><span class="toc-num">' + nums[hi] + '</span>' + h.textContent + '</a></li>';
       }
       while (level > 0) { tocHtml += '</ul>'; level--; }
       tocHtml += '</div></details>';

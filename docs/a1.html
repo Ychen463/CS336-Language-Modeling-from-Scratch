@@ -69,7 +69,7 @@
   <h2 id="notes">Notes</h2>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3 id="s1">1. Core Deliverables</h3>
+  <h3 id="s1">Core Deliverables</h3>
   <p class="zh">作业 1 需要从零实现以下内容（不使用框架现成组件）：</p>
   <ul>
     <li><strong>BPE tokenizer</strong> — efficient version with pre-tokenization (regex) and special tokens<span class="zh">（实现高效 BPE 分词器，含预分词和特殊 token 处理）</span></li>
@@ -81,14 +81,14 @@
   </ul>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3 id="s2">2. Datasets</h3>
+  <h3 id="s2">Datasets</h3>
   <ul>
     <li><strong>TinyStories:</strong> small synthetic dataset of children's stories — fast to train on, good for debugging<span class="zh">（小型合成儿童故事数据集——训练快，适合调试）</span></li>
     <li><strong>OpenWebText:</strong> large-scale web text dataset — the real challenge<span class="zh">（大规模网络文本数据集——真正的挑战）</span></li>
   </ul>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3 id="s3">3. Leaderboard</h3>
+  <h3 id="s3">Leaderboard</h3>
   <p>Minimize OpenWebText perplexity given <strong>45 minutes on a B200 GPU</strong>. This forces you to think about efficiency — you can't just scale up, you need smart architectural and training choices.</p>
   <p class="zh">在 B200 GPU 上 45 分钟内最小化 OpenWebText 困惑度。这迫使你思考效率——不能单纯靠堆算力，需要聪明的架构和训练决策。</p>
 
@@ -98,11 +98,11 @@
   </blockquote>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3 id="s4">4. Resource Accounting</h3>
+  <h3 id="s4">Resource Accounting</h3>
   <p>Before optimizing anything, you need to <strong>measure</strong>. Resource accounting answers: how much compute and memory does my model need?</p>
   <p class="zh">在优化任何东西之前，你需要<strong>度量</strong>。资源核算回答：我的模型需要多少计算量和显存？</p>
 
-  <h4 id="s4-1">4.1 Compute (FLOPs)</h4>
+  <h4 id="s4-1">Compute (FLOPs)</h4>
   <p>Model parameters must be moved from memory (HBM) to the compute units (SMs). A simple rule of thumb for training:</p>
   <p class="zh">模型参数必须从显存（HBM）搬到计算单元（SM）。训练的简单估算公式：</p>
 <pre><code>total_flops = 6 * N * D
@@ -112,7 +112,7 @@ total_flops = 6 * 70e9 * 1e12 = 4.2e23 FLOPs</code></pre>
   <p>Why 6? Forward pass ≈ $2ND$ FLOPs (each parameter does a multiply-add per token). Backward pass ≈ $4ND$ (roughly 2× forward). Total ≈ $6ND$.<br>
   <span class="zh">为什么是 6？前向传播 ≈ $2ND$ FLOPs（每个参数对每个 token 做一次乘加）。反向传播 ≈ $4ND$（约为前向的 2 倍）。总计 ≈ $6ND$。</span></p>
 
-  <h4 id="s4-2">4.2 Memory</h4>
+  <h4 id="s4-2">Memory</h4>
   <p>GPU memory holds multiple things simultaneously:</p>
   <p class="zh">GPU 显存需要同时存放多项内容：</p>
   <ul>
@@ -122,7 +122,7 @@ total_flops = 6 * 70e9 * 1e12 = 4.2e23 FLOPs</code></pre>
     <li><strong>Activations:</strong> intermediate values saved for backward pass, scales with batch size × seq len<span class="zh">（激活值：为反向传播保存的中间值，随 batch size × 序列长度增长）</span></li>
   </ul>
 
-  <h4 id="s4-3">4.3 Roofline Analysis</h4>
+  <h4 id="s4-3">Roofline Analysis</h4>
   <p>Determines whether an operation is <em>compute-bound</em> or <em>memory-bound</em>:</p>
   <p class="zh">判断操作的瓶颈是计算还是显存带宽：</p>
   <blockquote>
@@ -134,7 +134,7 @@ total_flops = 6 * 70e9 * 1e12 = 4.2e23 FLOPs</code></pre>
   <p>Example: <strong>B200 GPU</strong> — 2.25 PFLOP/s (bf16), 8 TB/s HBM bandwidth. Crossover point: $2.25 \times 10^{15} / 8 \times 10^{12} \approx 281$ FLOPs/byte. Operations above 281 are compute-bound; below are memory-bound.<br>
   <span class="zh">B200 GPU：2.25 PFLOP/s bf16 算力，8 TB/s 显存带宽。临界点约 281 FLOPs/字节。高于此为计算瓶颈，低于此为显存瓶颈。</span></p>
 
-  <h4 id="s4-4">4.4 Benchmarking &amp; Profiling</h4>
+  <h4 id="s4-4">Benchmarking &amp; Profiling</h4>
   <p>Theory is important, but always verify with profiling tools. <strong>Nsight Systems</strong> shows what actually happens on the GPU — kernel launch times, memory transfers, utilization gaps.</p>
   <p class="zh">理论很重要，但一定要用分析工具验证。<strong>Nsight Systems</strong> 能显示 GPU 上实际发生的情况——核启动时间、内存传输、利用率空白。</p>
 
@@ -144,7 +144,7 @@ total_flops = 6 * 70e9 * 1e12 = 4.2e23 FLOPs</code></pre>
   </div>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3 id="s5">5. Kernels</h3>
+  <h3 id="s5">Kernels</h3>
   <p>A <strong>kernel</strong> is a function that runs on the GPU. Understanding kernels is key to understanding GPU performance.</p>
   <p class="zh"><strong>核函数</strong>是在 GPU 上运行的函数。理解核函数是理解 GPU 性能的关键。</p>
 
@@ -153,7 +153,7 @@ total_flops = 6 * 70e9 * 1e12 = 4.2e23 FLOPs</code></pre>
     <span class="zh"><strong>核心原则：</strong>在内存中搬运数据非常昂贵——通常比计算本身<em>更</em>昂贵。GPU 能飞速做乘法，但大部分时间都在<em>等数据从显存送过来</em>。整个系统的故事都围绕一件事：<strong>如何最小化数据搬运</strong>。</span>
   </blockquote>
 
-  <h4 id="s5-1">5.1 The Problem with Standard PyTorch</h4>
+  <h4 id="s5-1">The Problem with Standard PyTorch</h4>
   <p>When using PyTorch, each primitive operation (matmul, add, activation) launches a separate kernel. Between each kernel, intermediate results are written back to HBM and then read again — wasteful round-trips.</p>
   <p class="zh">标准 PyTorch 的问题：每个基本操作（矩阵乘法、加法、激活函数）各自启动一个核。每个核之间，中间结果写回 HBM 然后又读出来——浪费的往返。</p>
 <pre><code># Naive: 3 separate kernels, 3 HBM round-trips
@@ -164,7 +164,7 @@ read HBM → compute C → write HBM    # kernel 3
 # Fused: 1 kernel, 1 HBM round-trip
 read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
 
-  <h4 id="s5-2">5.2 Kernel Fusion Strategies</h4>
+  <h4 id="s5-2">Kernel Fusion Strategies</h4>
   <p>Can write custom kernels to make GPUs go brrr:</p>
   <p class="zh">编写自定义核函数让 GPU 飞起来：</p>
   <ul>
@@ -172,7 +172,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
     <li><strong>Tiling (FlashAttention):</strong> break the $n \times n$ attention matrix into small tiles that fit in SRAM, compute tile by tile without ever materializing the full matrix in HBM<span class="zh">（分块——FlashAttention：把注意力矩阵切成能放进 SRAM 的小块，逐块计算，从不在 HBM 中生成完整矩阵）</span></li>
   </ul>
 
-  <h4 id="s5-3">5.3 Advanced GPU Concepts</h4>
+  <h4 id="s5-3">Advanced GPU Concepts</h4>
   <ul>
     <li><strong>Warp divergence:</strong> threads in a warp take different branches → serialized execution<span class="zh">（warp 分歧：同一 warp 中的线程走不同分支→串行执行）</span></li>
     <li><strong>Memory coalescing:</strong> adjacent threads should access adjacent memory addresses for efficient reads<span class="zh">（内存合并访问：相邻线程应访问相邻内存地址以提高读取效率）</span></li>
@@ -181,7 +181,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
     <li><strong>Bulk-async memory transfers:</strong> overlap data movement with computation<span class="zh">（批量异步内存传输：数据搬运和计算重叠执行）</span></li>
   </ul>
 
-  <h4 id="s5-4">5.4 Kernel Languages</h4>
+  <h4 id="s5-4">Kernel Languages</h4>
   <p>Write kernels in:</p>
   <ul>
     <li><strong>CUDA</strong> — low-level, full control over the GPU<span class="zh">（底层、对 GPU 完全控制）</span></li>
@@ -191,11 +191,11 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
   </ul>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3 id="s6">6. Parallelism</h3>
+  <h3 id="s6">Parallelism</h3>
   <p>What if you have 1024 GPUs? Data movement between GPUs is even slower than within a GPU, but the same <strong>"minimize data movement"</strong> principle holds.</p>
   <p class="zh">如果你有 1024 张 GPU 呢？GPU 之间的数据搬运比 GPU 内部更慢，但同样的<strong>「最小化数据搬运」</strong>原则依然适用。</p>
 
-  <h4 id="s6-1">6.1 Collective Operations</h4>
+  <h4 id="s6-1">Collective Operations</h4>
   <p>Classic collective operations are the building blocks of multi-GPU communication:</p>
   <p class="zh">经典集体通信操作是多 GPU 通信的基础组件：</p>
   <ul>
@@ -204,11 +204,11 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
     <li><strong>Reduce-scatter:</strong> reduce + scatter result across GPUs<span class="zh">（Reduce-scatter：归约后将结果分散到各 GPU）</span></li>
   </ul>
 
-  <h4 id="s6-2">6.2 What to Shard</h4>
+  <h4 id="s6-2">What to Shard</h4>
   <p>Shard memory across GPUs: parameters, activations, gradients, optimizer states — each can be distributed independently.</p>
   <p class="zh">在 GPU 间分片的内容：参数、激活值、梯度、优化器状态——每个都可以独立分布。</p>
 
-  <h4 id="s6-3">6.3 Types of Parallelism</h4>
+  <h4 id="s6-3">Types of Parallelism</h4>
   <table>
     <tr><th>Type</th><th>What's Distributed</th><th>When to Use</th><th class="zh">中文说明</th></tr>
     <tr><td><strong>Data parallelism</strong> (DDP)</td><td>Data batches; all-reduce gradients</td><td>Always — simplest starting point</td><td class="zh">数据并行：最简单的起点</td></tr>
@@ -224,11 +224,11 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
   </blockquote>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3 id="s7">7. Inference</h3>
+  <h3 id="s7">Inference</h3>
   <p><strong>Goal:</strong> generate tokens given a prompt. This is needed not just for serving users, but also for <strong>reinforcement learning</strong> (generate rollouts), <strong>test-time compute</strong> (chain-of-thought reasoning), and <strong>evaluation</strong> (benchmarks).</p>
   <p class="zh"><strong>目标：</strong>根据 prompt 生成 token。不仅用于服务用户，还用于<strong>强化学习</strong>（生成 rollout）、<strong>测试时计算</strong>（思维链推理）和<strong>评估</strong>（基准测试）。</p>
 
-  <h4 id="s7-1">7.1 Two Phases: Prefill &amp; Decode</h4>
+  <h4 id="s7-1">Two Phases: Prefill &amp; Decode</h4>
   <p>Inference has two phases with fundamentally different characteristics:</p>
   <p class="zh">推理有两个阶段，特性截然不同：</p>
 
@@ -243,7 +243,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
     <tr><td><strong>Decode</strong></td><td>Generate one token at a time</td><td>Memory-bound</td><td>Must load entire model weights for each single token</td><td class="zh">解码：逐 token 生成，每个 token 都要加载全部模型权重</td></tr>
   </table>
 
-  <h4 id="s7-2">7.2 Speeding Up Decoding</h4>
+  <h4 id="s7-2">Speeding Up Decoding</h4>
 
   <p><strong>Use a cheaper model:</strong></p>
   <p class="zh">用更便宜的模型：</p>
@@ -260,7 +260,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
     <span class="zh">用一个便宜的「草稿」模型快速生成多个候选 token。然后用完整模型<strong>并行打分所有候选</strong>（像预填充一样——计算瓶颈，快！）。接受完整模型同意的 token。这是<strong>数学上精确的</strong>——产生与完整模型完全相同的分布，只是更快。</span>
   </blockquote>
 
-  <h4 id="s7-3">7.3 Systems Optimizations</h4>
+  <h4 id="s7-3">Systems Optimizations</h4>
   <ul>
     <li><strong>KV cache:</strong> store computed Key/Value pairs from previous tokens — avoids recomputing attention for the entire history at each step<span class="zh">（KV 缓存：存储之前 token 计算过的 Key/Value 对——避免每步重新计算整个历史的注意力）</span></li>
     <li><strong>Fused kernels:</strong> same principle as training — minimize HBM round-trips<span class="zh">（融合核函数：与训练相同的原则——减少 HBM 往返）</span></li>

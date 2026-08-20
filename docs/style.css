@@ -204,16 +204,8 @@ main > h2 {
   margin: 48px 0 18px;
   color: var(--fg);
   letter-spacing: -.2px;
-}
-main > h2::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 20px;
-  background: var(--accent);
-  border-radius: 2px;
-  margin-right: 10px;
-  vertical-align: text-bottom;
+  border-left: 4px solid var(--accent);
+  padding-left: 10px;
 }
 main h3 {
   font-size: 17px;
@@ -225,6 +217,30 @@ main h4 {
   font-size: 15px;
   font-weight: 600;
   margin: 18px 0 6px;
+}
+
+/* ── Auto-numbering via CSS counters ── */
+main { counter-reset: h2cnt; }
+main > h2[id] { counter-increment: h2cnt; counter-reset: h3cnt h4cnt; }
+main > h3[id] { counter-increment: h3cnt; counter-reset: h4cnt; }
+main > h4[id] { counter-increment: h4cnt; }
+main > h2[id]::before {
+  content: counter(h2cnt) ". ";
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 90%;
+}
+main > h3[id]::before {
+  content: counter(h2cnt) "." counter(h3cnt) " ";
+  color: var(--muted);
+  font-size: 90%;
+  margin-right: 2px;
+}
+main > h4[id]::before {
+  content: counter(h2cnt) "." counter(h3cnt) "." counter(h4cnt) " ";
+  color: var(--muted);
+  font-size: 85%;
+  margin-right: 2px;
 }
 
 /* ── Grid ── */
@@ -546,12 +562,21 @@ figcaption .ft {
   transition: color .15s;
 }
 .toc a:hover { color: var(--accent); }
-.toc-l1 > li { margin-bottom: 2px; }
-.toc-l2 { padding-left: 20px; }
+.toc .toc-num {
+  color: var(--muted);
+  font-size: 90%;
+  font-weight: 600;
+  margin-right: 4px;
+  min-width: 2em;
+  display: inline-block;
+}
+.toc-l1 > li { margin-bottom: 4px; }
+.toc-l1 > li > a { font-weight: 600; }
+.toc-l2 { padding-left: 24px; margin-top: 2px; }
 .toc-l2 > li { margin-bottom: 0; }
-.toc-l2 a { font-size: 13px; color: var(--muted); padding: 2px 0; }
+.toc-l2 a { font-size: 13.5px; color: var(--fg); padding: 2px 0; font-weight: 400; }
 .toc-l2 a:hover { color: var(--accent); }
-.toc-l3 { padding-left: 18px; }
+.toc-l3 { padding-left: 24px; margin-top: 1px; }
 .toc-l3 > li { margin-bottom: 0; }
 .toc-l3 a { font-size: 12.5px; color: var(--muted); padding: 1px 0; }
 .toc-l3 a:hover { color: var(--accent); }
