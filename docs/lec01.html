@@ -16,7 +16,62 @@
   <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">Instructor: Percy</p>
   <div class="lecture-links">Lecture slides: <a href="https://cs336.stanford.edu/lectures/?trace=lecture_01" target="_blank">Interactive lecture ↗</a><br>Recording: <a href="https://www.youtube.com/watch?v=JuoVZkPBiKk" target="_blank">Watch on YouTube ↗</a></div>
 
-  <div class="tldr">
+  <!-- ── Table of Contents ── -->
+  <details class="toc" open>
+    <summary>Table of Contents</summary>
+    <div class="toc-body">
+      <ol>
+        <li><a href="#tldr">TL;DR</a></li>
+        <li><a href="#key-concepts">Key Concepts</a></li>
+        <li><a href="#part1">Part 1: Why This Course Exists</a>
+          <ul class="toc-sub">
+            <li><a href="#part1">Disconnection problem, industrialization, transferable knowledge</a></li>
+          </ul>
+        </li>
+        <li><a href="#part2">Part 2: LM History &amp; Landscape</a>
+          <ul class="toc-sub">
+            <li><a href="#part2">Timeline, open models, evolution of "language model"</a></li>
+          </ul>
+        </li>
+        <li><a href="#part3">Part 3: Course Logistics</a></li>
+        <li><a href="#part4">Part 4: Course Syllabus &amp; Unit Previews</a>
+          <ul class="toc-sub">
+            <li><a href="#unit1-preview">Basics — Architecture &amp; Training</a></li>
+            <li><a href="#unit2-preview">Systems — Hardware &amp; Parallelism</a></li>
+            <li><a href="#unit2-inference">Systems — Inference</a></li>
+            <li><a href="#unit3-preview">Scaling Laws</a></li>
+            <li><a href="#unit4-preview">Data</a></li>
+            <li><a href="#unit5-preview">Alignment</a></li>
+          </ul>
+        </li>
+        <li><a href="#part5">Part 5: Tokenization</a>
+          <ul class="toc-sub">
+            <li><a href="#part5">Character, Byte, Word, BPE tokenizers</a></li>
+          </ul>
+        </li>
+        <li><a href="#part6">Part 6: Tokenization Trade-off Spectrum</a></li>
+        <li><a href="#part7">Part 7: What Does BPE Optimize?</a>
+          <ul class="toc-sub">
+            <li><a href="#part7">Implicit objective, adaptive computation, tokenizer-free dream</a></li>
+          </ul>
+        </li>
+        <li><a href="#part8">Part 8: Attention Fundamentals</a>
+          <ul class="toc-sub">
+            <li><a href="#part8">Self-attention, Q/K/V, causal masking, multi-head</a></li>
+          </ul>
+        </li>
+        <li><a href="#part9">Part 9: Transformer Architecture Walkthrough</a>
+          <ul class="toc-sub">
+            <li><a href="#part9">Embedding → Blocks → Norm → Linear → Softmax</a></li>
+          </ul>
+        </li>
+        <li><a href="#assignment">Assignment 1 Preview</a></li>
+        <li><a href="#my-notes">My Notes &amp; Questions</a></li>
+      </ol>
+    </div>
+  </details>
+
+  <div class="tldr" id="tldr">
     <h3>TL;DR</h3>
     <ul>
       <li>Language models need a tokenizer to convert raw text (bytes) into integer sequences — the choice of tokenizer profoundly affects model efficiency.<br><span class="zh">语言模型需要分词器将原始文本（字节）转换为整数序列——分词器的选择深刻影响模型效率。</span></li>
@@ -26,22 +81,68 @@
     </ul>
   </div>
 
-  <h2>Key Concepts</h2>
-  <div class="concepts">
-    <div><strong>Tokenizer</strong> — Converts between raw strings and integer sequences (tokens). Must implement <code>encode(str→list[int])</code> and <code>decode(list[int]→str)</code>.<br><span class="zh">分词器：在原始字符串和整数序列之间转换。必须实现 encode 和 decode 且能完美还原。</span></div>
-    <div><strong>Compression Ratio</strong> — bytes / tokens. Higher is better: means shorter sequences for the Transformer. BPE achieves ~4x compression on English text.<br><span class="zh">压缩率 = 字节数 / token 数。越高越好，意味着 Transformer 处理的序列越短。BPE 在英文上约 4 倍压缩。</span></div>
-    <div><strong>BPE Training</strong> — Start with bytes (vocab=256). Repeat: count adjacent pairs → merge most frequent → add merged token to vocab. Each merge increases compression.<br><span class="zh">BPE 训练：从 256 个字节开始，反复统计相邻对频率→合并最高频对→加入词表。每次合并提升压缩率。</span></div>
-    <div><strong>BPE Encoding</strong> — Given a string, convert to bytes, then apply learned merge rules in training order. Greedy left-to-right, rank-based resolution for overlaps.<br><span class="zh">BPE 编码：将字符串转为字节，按训练时的顺序逐一应用合并规则。重叠时按 rank（学习顺序）贪心解决。</span></div>
-    <div><strong>Pre-tokenization</strong> — Split text on word boundaries (regex) before BPE to prevent cross-word merges. GPT-2 uses a regex that isolates words, numbers, punctuation.<br><span class="zh">预分词：在 BPE 之前用正则按词边界切分，防止跨词合并。GPT-2 用正则分离单词、数字、标点。</span></div>
-    <div><strong>Vocabulary Size</strong> — GPT-2: 50,257 tokens. GPT-4/5 (o200k): 200,019 tokens. Larger vocab = higher compression but sparser embeddings.<br><span class="zh">词表大小——GPT-2: 5 万，GPT-4/5: 20 万。词表越大压缩越好，但 embedding 更稀疏。</span></div>
-    <div><strong>The Bitter Lesson</strong> — Not "scale is all that matters" but "algorithms that scale are what matter." Efficiency is more important at larger scales.<br><span class="zh">苦涩的教训：不是「规模就是一切」，而是「能 scale 的算法才重要」。规模越大，效率越关键。</span></div>
-    <div><strong>Three Types of Knowledge</strong> — Mechanics (how things work), Mindset (squeeze hardware), Intuitions (which decisions yield good accuracy). CS336 teaches the first two.<br><span class="zh">三类知识：机制（事物如何运作）、心态（榨干硬件）、直觉（哪些决策带来好效果）。CS336 教前两种。</span></div>
+  <h2 id="key-concepts">Key Concepts</h2>
+
+  <!-- ── Tokenization ── -->
+  <div class="concepts-group">
+    <div class="concepts-group-title">Tokenization</div>
+    <div class="concepts">
+      <div><strong>Tokenizer</strong> — Converts between raw strings and integer sequences (tokens). Must implement <code>encode(str→list[int])</code> and <code>decode(list[int]→str)</code> with lossless round-trip.<br><span class="zh">分词器：在原始字符串和整数序列之间转换。必须实现 encode 和 decode 且能完美还原。</span></div>
+      <div><strong>Tokenization Trade-off</strong> — A spectrum from bytes (small vocab, long seq) to words (large vocab, short seq). BPE sits in the sweet spot: controllable vocab, ~4x compression, no OOV.<br><span class="zh">分词权衡：从字节（小词表、长序列）到单词（大词表、短序列）的光谱。BPE 处于最佳位置。</span></div>
+      <div><strong>Compression Ratio</strong> — bytes / tokens. Higher is better: means shorter sequences for the Transformer. BPE achieves ~4x compression on English text.<br><span class="zh">压缩率 = 字节数 / token 数。越高越好，意味着 Transformer 处理的序列越短。BPE 在英文上约 4 倍压缩。</span></div>
+      <div><strong>Vocabulary Size</strong> — GPT-2: 50,257 tokens. GPT-4/5 (o200k): 200,019 tokens. Larger vocab = higher compression but sparser embeddings.<br><span class="zh">词表大小——GPT-2: 5 万，GPT-4/5: 20 万。词表越大压缩越好，但 embedding 更稀疏。</span></div>
+      <div><strong>BPE Training</strong> — Start with bytes (vocab=256). Repeat: count adjacent pairs → merge most frequent → add merged token to vocab. Each merge increases compression.<br><span class="zh">BPE 训练：从 256 个字节开始，反复统计相邻对频率→合并最高频对→加入词表。每次合并提升压缩率。</span></div>
+      <div><strong>BPE Encoding</strong> — Given a string, convert to bytes, then apply learned merge rules in training order. Greedy left-to-right, rank-based resolution for overlaps.<br><span class="zh">BPE 编码：将字符串转为字节，按训练时的顺序逐一应用合并规则。重叠时按 rank（学习顺序）贪心解决。</span></div>
+      <div><strong>Pre-tokenization</strong> — Split text on word boundaries (regex) before BPE to prevent cross-word merges. GPT-2 uses a regex that isolates words, numbers, punctuation.<br><span class="zh">预分词：在 BPE 之前用正则按词边界切分，防止跨词合并。GPT-2 用正则分离单词、数字、标点。</span></div>
+      <div><strong>Adaptive Computation</strong> — BPE implicitly makes the Transformer allocate more compute to rare/surprising tokens (more tokens per unit of meaning) and less to common patterns.<br><span class="zh">自适应计算：BPE 隐式地让 Transformer 对罕见/意外内容分配更多计算（每单位含义更多 token），对常见模式分配更少。</span></div>
+    </div>
+  </div>
+
+  <!-- ── Transformer Architecture ── -->
+  <div class="concepts-group">
+    <div class="concepts-group-title">Transformer Architecture</div>
+    <div class="concepts">
+      <div><strong>Token + Position Embedding</strong> — Token ID → learnable vector ($d_{\text{model}}$ dims). Position embedding added element-wise so the model knows both "what I am" and "where I am."<br><span class="zh">Token + 位置嵌入：Token ID → 可学习向量。位置嵌入逐元素加上去，让模型同时知道「我是谁」和「我在哪」。</span></div>
+      <div><strong>Self-Attention (Q/K/V)</strong> — Each token computes Query, Key, Value vectors. Attention score = softmax(QK⊤/√d). Allows every token to gather context from all other tokens in the sequence.<br><span class="zh">自注意力：每个 token 计算 Q、K、V 向量。注意力分数 = softmax(QK⊤/√d)。让序列中每个 token 从所有其他 token 收集上下文。</span></div>
+      <div><strong>Causal Masking</strong> — For autoregressive LMs, token $i$ can only attend to positions $\leq i$. Enforced by setting future scores to $-\infty$ before softmax → lower-triangular attention pattern.<br><span class="zh">因果掩码：自回归语言模型中，token $i$ 只能关注位置 $\leq i$。通过将未来位置的分数设为 $-\infty$ 实现→下三角注意力模式。</span></div>
+      <div><strong>Multi-Head Attention</strong> — Run $h$ independent attention heads in parallel, each with its own Q/K/V projections on $d_k = d_{\text{model}}/h$ dims. Different heads capture different relationship types.<br><span class="zh">多头注意力：并行运行 $h$ 个独立的注意力头，每个在 $d_k = d_{\text{model}}/h$ 维上操作。不同头捕获不同类型的关系。</span></div>
+      <div><strong>Attention vs FFN</strong> — Attention = communication (tokens exchange info). FFN = computation (each token processes independently). These are the two core operations in every Transformer Block.<br><span class="zh">Attention vs FFN：Attention = 交流（token 之间交换信息）。FFN = 计算（每个 token 独立处理）。这是每个 Transformer Block 的两个核心操作。</span></div>
+      <div><strong>Residual Connection</strong> — $x_{\text{new}} = x + f(x)$. Instead of replacing input, new information is <em>added</em> to it. Enables deep networks by letting gradients flow and building representations incrementally.<br><span class="zh">残差连接：$x_{\text{new}} = x + f(x)$。不替换输入，而是将新信息<em>叠加</em>上去。让梯度顺畅传播，逐层构建表示。</span></div>
+      <div><strong>Normalization</strong> — Keeps value scales stable across layers. Modern LLMs use RMSNorm (simpler than LayerNorm). Applied before attention and before FFN (pre-norm).<br><span class="zh">归一化：保持数值在各层间稳定。现代 LLM 用 RMSNorm（比 LayerNorm 简单）。在 attention 和 FFN 前应用（前归一化）。</span></div>
+      <div><strong>Logits &amp; Softmax</strong> — Final linear layer maps $d_{\text{model}}$ → vocab size, producing logits (raw scores). Softmax converts logits to probabilities summing to 1.<br><span class="zh">Logits 和 Softmax：最终线性层从 $d_{\text{model}}$ 映射到词表大小，产生 logits（原始分数）。Softmax 将 logits 转为总和为 1 的概率。</span></div>
+      <div><strong>Autoregressive Generation</strong> — Predict one token at a time, append it, repeat. The full sequence is re-fed each step. This is how ChatGPT produces text.<br><span class="zh">自回归生成：每次预测一个 token，追加到序列中，重复。每步都重新输入完整序列。ChatGPT 就是这样生成文本的。</span></div>
+      <div><strong>Tensor Shape (B, T, D)</strong> — <code>(batch_size, seq_len, d_model)</code> — the universal shape throughout the Transformer. Input and output of each block have the same shape; only the meaning of the numbers changes.<br><span class="zh">张量形状 (B, T, D)：(批大小, 序列长度, 模型维度)——贯穿 Transformer 的通用形状。每个 block 输入输出形状相同，只是数字的含义变了。</span></div>
+      <div><strong>Dropout</strong> — Regularization: randomly zeroes out activations during training to prevent overfitting. Forces the model to not rely on any single neuron.<br><span class="zh">Dropout：正则化方法，训练时随机将部分激活值置零防止过拟合。迫使模型不过度依赖某几个固定神经元。</span></div>
+    </div>
+  </div>
+
+  <!-- ── Systems & Scaling ── -->
+  <div class="concepts-group">
+    <div class="concepts-group-title">Systems &amp; Scaling (Preview)</div>
+    <div class="concepts">
+      <div><strong>Arithmetic Intensity</strong> — FLOPs / bytes moved. Determines whether an operation is compute-bound (high intensity) or memory-bound (low intensity). Key to GPU performance analysis.<br><span class="zh">算术强度 = FLOPs / 搬运字节数。决定操作瓶颈是计算（高强度）还是显存带宽（低强度）。GPU 性能分析的关键。</span></div>
+      <div><strong>Kernel Fusion</strong> — Combine multiple GPU operations into one kernel to avoid redundant HBM round-trips. FlashAttention is the canonical example — fused attention via tiling.<br><span class="zh">核融合：将多个 GPU 操作合并为一个核，避免冗余显存往返。FlashAttention 是经典例子——通过 tiling 融合注意力。</span></div>
+      <div><strong>Prefill vs Decode</strong> — Prefill processes all prompt tokens in parallel (compute-bound). Decode generates one token at a time (memory-bound). Different bottlenecks require different optimizations.<br><span class="zh">预填充 vs 解码：预填充并行处理所有 prompt token（计算瓶颈）。解码逐 token 生成（显存带宽瓶颈）。不同瓶颈需要不同优化。</span></div>
+      <div><strong>Speculative Decoding</strong> — Small draft model generates candidate tokens; large model scores them in parallel. Mathematically exact (no quality loss), speeds up decode phase.<br><span class="zh">投机解码：小型草稿模型生成候选 token，大模型并行打分。数学上精确（无质量损失），加速解码阶段。</span></div>
+      <div><strong>Chinchilla Scaling</strong> — Given compute budget $C \approx 6ND$, compute-optimal allocation is $D \approx 20N$ (train tokens ≈ 20× model params). Caveat: doesn't account for inference cost.<br><span class="zh">Chinchilla 缩放：给定算力预算 $C \approx 6ND$，计算最优分配是 $D \approx 20N$（训练 token 数 ≈ 20 倍模型参数）。注意：未考虑推理成本。</span></div>
+      <div><strong>KV Cache</strong> — Store past Key/Value pairs during autoregressive decoding to avoid recomputation. Trades memory for speed — essential for efficient inference.<br><span class="zh">KV 缓存：自回归解码时存储历史 Key/Value 对避免重复计算。用显存换速度——高效推理的必要手段。</span></div>
+    </div>
+  </div>
+
+  <!-- ── Course Philosophy ── -->
+  <div class="concepts-group">
+    <div class="concepts-group-title">Course Philosophy</div>
+    <div class="concepts">
+      <div><strong>The Bitter Lesson</strong> — Not "scale is all that matters" but "algorithms that scale are what matter." Efficiency is more important at larger scales.<br><span class="zh">苦涩的教训：不是「规模就是一切」，而是「能 scale 的算法才重要」。规模越大，效率越关键。</span></div>
+      <div><strong>Three Types of Knowledge</strong> — Mechanics (how things work), Mindset (squeeze hardware), Intuitions (which decisions yield good accuracy). CS336 teaches the first two.<br><span class="zh">三类知识：机制（事物如何运作）、心态（榨干硬件）、直觉（哪些决策带来好效果）。CS336 教前两种。</span></div>
+      <div><strong>Expressivity / Stability / Efficiency</strong> — Every design decision in LLMs balances these three. Expressivity (model complex dependencies), stability (keep norms in goldilocks zone), efficiency (runs fast on hardware).<br><span class="zh">表达力 / 稳定性 / 效率：LLM 的每个设计决策都在平衡这三者。表达力（建模复杂依赖）、稳定性（数值范围合理）、效率（硬件上跑得快）。</span></div>
+    </div>
   </div>
 
   <h2>Notes</h2>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3>Part 1: Why This Course Exists</h3>
+  <h3 id="part1">Part 1: Why This Course Exists</h3>
 
   <h4>The Disconnection Problem</h4>
   <p>Researchers are becoming increasingly disconnected from underlying technology:</p>
@@ -78,7 +179,7 @@
   </table>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3>Part 2: LM History & Landscape</h3>
+  <h3 id="part2">Part 2: LM History &amp; Landscape</h3>
 
   <h4>Timeline</h4>
   <p class="zh">语言模型发展时间线：</p>
@@ -105,7 +206,30 @@
   <p>The fundamentals are the same (attention, kernels, optimization). The specs change (longer context, inference efficiency).<br><span class="zh">底层基础不变（attention、kernels、optimization），但规格在变（更长上下文、更高效推理）。</span></p>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3>Part 3: Course Syllabus Overview</h3>
+  <h3 id="part3">Part 3: Course Logistics &amp; Who Should Take This</h3>
+
+  <h4>Prerequisites & Expectations</h4>
+  <p>This course requires a high tolerance for understanding internals — it's a <strong>research engineering</strong> course, not an applications course.</p>
+  <p class="zh">这门课要求对底层原理有高度的求知欲——这是一门<strong>研究工程</strong>课程，而非应用课程。</p>
+
+  <p><strong>NOT recommended if you:</strong></p>
+  <p class="zh">以下情况<strong>不推荐</strong>选课：</p>
+  <ul>
+    <li>Want to complete a research project this quarter<span class="zh">（想在这学期完成研究项目）</span></li>
+    <li>Want the latest AI techniques (RAG, multimodality, agents)<span class="zh">（想学最新 AI 应用技术如 RAG、多模态、agents）</span></li>
+    <li>Want to build production applications<span class="zh">（想构建生产级应用）</span></li>
+  </ul>
+
+  <h4>Compute Resources</h4>
+  <p>Compute provided by <strong>Modal</strong> — students get access to <strong>B200 GPUs</strong> for assignments. Leaderboards benchmark model quality given fixed compute budgets.</p>
+  <p class="zh">算力由 <strong>Modal</strong> 提供——学生可以使用 <strong>B200 GPU</strong> 完成作业。排行榜在固定算力预算下评估模型质量。</p>
+
+  <h4>AI Policy</h4>
+  <p>Coding agents are generally unhelpful for the assignments (the code is too low-level and novel). AI tutoring is permitted — the course provides an <code>AGENTS.md</code> file with pedagogical guidance for AI tutors.</p>
+  <p class="zh">编码 agent 对作业帮助不大（代码太底层、太新颖）。允许使用 AI 辅导——课程提供 AGENTS.md 文件指导 AI tutor 以教学方式辅助学习。</p>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="part4">Part 4: Course Syllabus &amp; Unit Previews</h3>
 
   <table>
     <tr><th>Module</th><th>Assignment</th><th>Key Topics</th><th class="zh">中文说明</th></tr>
@@ -131,8 +255,162 @@
     <li>Scaling laws: use smaller models to find good hyperparameters cheaply<span class="zh">（缩放定律：用小模型便宜地找到好的超参数）</span></li>
   </ul>
 
+  <h4 id="unit1-preview">Unit 1: Basics — Architecture &amp; Training Preview</h4>
+  <p>The Transformer is the starting point. Key design choices covered in Lectures 03–04:</p>
+  <p class="zh">Transformer 是起点。Lecture 03–04 会详细展开以下设计选择：</p>
+
+  <table>
+    <tr><th>Component</th><th>Options</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Activation</strong></td><td>ReLU → SwiGLU</td><td class="zh">激活函数：从 ReLU 到 SwiGLU</td></tr>
+    <tr><td><strong>Position encoding</strong></td><td>Sinusoidal → RoPE</td><td class="zh">位置编码：从正弦到旋转位置编码</td></tr>
+    <tr><td><strong>Normalization</strong></td><td>LayerNorm → RMSNorm, pre-norm vs post-norm, QK-norm</td><td class="zh">归一化：LayerNorm→RMSNorm，前归一化 vs 后归一化</td></tr>
+    <tr><td><strong>Attention</strong></td><td>Full → GQA, MLA, sparse/local, linear, Mamba</td><td class="zh">注意力：全注意力→GQA、MLA、稀疏、线性、Mamba</td></tr>
+    <tr><td><strong>MLP</strong></td><td>Dense → Mixture of Experts (MoE) with routing</td><td class="zh">前馈层：全连接→专家混合（MoE）+ 路由</td></tr>
+  </table>
+
+  <p><strong>Architecture dimensions:</strong> hidden dim ($d_{\text{model}}$), depth (num layers), num attention heads, num experts (if MoE).</p>
+  <p class="zh">架构维度：隐藏维度、层数、注意力头数、专家数（MoE 时）。</p>
+
+  <p><strong>Training components:</strong></p>
+  <p class="zh">训练组件：</p>
+  <table>
+    <tr><th>Component</th><th>Options</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Loss</strong></td><td>Next-token prediction, multi-token prediction (MTP)</td><td class="zh">损失函数：下一 token 预测、多 token 预测</td></tr>
+    <tr><td><strong>Optimizer</strong></td><td>Adam (2014) → AdamW (2017) → SOAP, Muon (2024)</td><td class="zh">优化器：从 Adam 到 AdamW 再到 SOAP、Muon</td></tr>
+    <tr><td><strong>Initialization</strong></td><td>Xavier, muP (maximal update parametrization)</td><td class="zh">初始化：Xavier、muP（跨规模迁移超参数）</td></tr>
+    <tr><td><strong>LR schedule</strong></td><td>Cosine annealing, WSD (warmup-stable-decay)</td><td class="zh">学习率调度：余弦退火、WSD</td></tr>
+    <tr><td><strong>Regularization</strong></td><td>Dropout, weight decay</td><td class="zh">正则化：Dropout、权重衰减</td></tr>
+    <tr><td><strong>Batch size</strong></td><td>Critical batch size concept, large-batch training</td><td class="zh">批大小：临界批大小、大批量训练</td></tr>
+  </table>
+
+  <h4 id="unit2-preview">Unit 2: Systems — Hardware &amp; Parallelism Preview</h4>
+  <p class="zh">系统层：如何在 GPU 上高效运行模型？</p>
+
+  <p><strong>Resource accounting</strong> — the foundation of systems thinking:</p>
+  <p class="zh">资源核算——系统思维的基础：</p>
+  <ul>
+    <li><strong>FLOPs:</strong> How many floating point operations does a forward + backward pass require?<span class="zh">（一次前向+反向需要多少浮点运算？）</span></li>
+    <li><strong>Memory:</strong> How much GPU memory for parameters, activations, gradients, optimizer states?<span class="zh">（参数、激活值、梯度、优化器状态需要多少显存？）</span></li>
+    <li><strong>Arithmetic intensity:</strong> FLOPs / bytes moved — determines if you're <em>compute-bound</em> or <em>memory-bound</em><span class="zh">（算术强度 = FLOPs / 搬运字节数，决定瓶颈是计算还是带宽）</span></li>
+  </ul>
+  <p>Example: B200 GPU — 2.25 PFLOP/s (bf16), 8 TB/s memory bandwidth. Parameters live in HBM and must be moved to SMs for computation.<span class="zh">（B200 GPU：2.25 PFLOP/s bf16 算力，8 TB/s 显存带宽。参数在 HBM 中，必须搬到 SM 上计算。）</span></p>
+
+  <p><strong>Kernels</strong> — functions that execute on GPU:</p>
+  <p class="zh">核函数——在 GPU 上执行的函数：</p>
+  <ul>
+    <li>Standard PyTorch: each op (matmul, add, activation) launches a separate kernel with HBM round-trips<span class="zh">（标准 PyTorch：每个操作启动一个核，中间结果写回 HBM 再读回来）</span></li>
+    <li><strong>Kernel fusion:</strong> combine multiple ops into one kernel → fewer memory round-trips → faster<span class="zh">（核融合：把多个操作合并成一个核→减少显存往返→更快）</span></li>
+    <li>Example: <strong>FlashAttention</strong> — fused attention kernel using tiling, avoids materializing the $n \times n$ attention matrix<span class="zh">（FlashAttention：融合注意力核，用 tiling 技术避免实体化 $n \times n$ 注意力矩阵）</span></li>
+    <li>Languages: CUDA, <strong>Triton</strong> (used in A2), CUTLASS, ThunderKittens<span class="zh">（编写语言：CUDA、Triton（A2 会用）、CUTLASS、ThunderKittens）</span></li>
+  </ul>
+
+  <p><strong>Parallelism</strong> — scaling to 1000s of GPUs:</p>
+  <p class="zh">并行化——扩展到数千张 GPU：</p>
+  <table>
+    <tr><th>Type</th><th>What's Distributed</th><th class="zh">中文说明</th></tr>
+    <tr><td>Data parallelism (DDP)</td><td>Data batches across GPUs; all-reduce gradients</td><td class="zh">数据并行：数据分发到各 GPU，梯度 all-reduce 聚合</td></tr>
+    <tr><td>Tensor parallelism</td><td>Split individual weight matrices across GPUs</td><td class="zh">张量并行：单个权重矩阵切分到多 GPU</td></tr>
+    <tr><td>Pipeline parallelism</td><td>Different layers on different GPUs</td><td class="zh">流水线并行：不同层放在不同 GPU</td></tr>
+    <tr><td>Sequence parallelism</td><td>Split long sequences across GPUs</td><td class="zh">序列并行：长序列切分到多 GPU</td></tr>
+    <tr><td>Expert parallelism</td><td>Different MoE experts on different GPUs</td><td class="zh">专家并行：不同专家放在不同 GPU</td></tr>
+  </table>
+  <p>Core principle: same as kernels — <strong>minimize data movement</strong>, now between GPUs instead of between HBM and SMs.</p>
+  <p class="zh">核心原则与核函数相同——<strong>最小化数据搬运</strong>，只不过现在是 GPU 之间而非 HBM 和 SM 之间。</p>
+
+  <h4 id="unit2-inference">Unit 2 continued: Inference Preview</h4>
+  <p>Inference has two distinct phases with very different characteristics:</p>
+  <p class="zh">推理有两个截然不同的阶段：</p>
+  <table>
+    <tr><th>Phase</th><th>What Happens</th><th>Bottleneck</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Prefill</strong></td><td>Process all prompt tokens in parallel</td><td>Compute-bound (like training)</td><td class="zh">预填充：并行处理所有 prompt token，瓶颈是算力</td></tr>
+    <tr><td><strong>Decode</strong></td><td>Generate one token at a time, auto-regressively</td><td>Memory-bound (load full model per token)</td><td class="zh">解码：逐 token 自回归生成，瓶颈是显存带宽</td></tr>
+  </table>
+  <p><strong>Decode optimizations:</strong></p>
+  <p class="zh">解码阶段的优化手段：</p>
+  <ul>
+    <li><strong>Quantization:</strong> reduce weight precision (FP16 → INT8 → INT4) → smaller model → faster loading<span class="zh">（量化：降低权重精度→模型更小→加载更快）</span></li>
+    <li><strong>Speculative decoding:</strong> small draft model generates multiple candidate tokens; large model scores them in parallel — <em>mathematically exact</em>, no quality loss<span class="zh">（投机解码：小模型快速生成候选 token，大模型并行打分——数学上精确，无质量损失）</span></li>
+    <li><strong>KV cache:</strong> store past key/value pairs to avoid recomputation<span class="zh">（KV 缓存：存储历史 key/value 避免重复计算）</span></li>
+    <li><strong>Continuous batching:</strong> dynamically add/remove requests from a batch<span class="zh">（连续批处理：动态向批次中添加/移除请求）</span></li>
+  </ul>
+  <p>Inference optimization matters increasingly because of: actual usage, RL training (generate rollouts), test-time compute, evaluation.</p>
+  <p class="zh">推理优化越来越重要，因为：实际使用、RL 训练（生成 rollout）、测试时计算、模型评估都需要推理。</p>
+
+  <h4 id="unit3-preview">Unit 3: Scaling Laws Preview</h4>
+  <p>Core problem: hyperparameter tuning at full scale is prohibitively expensive. Solution: <strong>scaling recipes with predictability</strong>.</p>
+  <p class="zh">核心问题：在全尺度下调超参数太贵了。解决方案：<strong>带有可预测性的缩放配方</strong>。</p>
+
+  <ol>
+    <li>Run small-scale experiments (up to ~$10^{24}$ FLOPs)<span class="zh">（进行小规模实验）</span></li>
+    <li>Fit scaling laws to predict larger scales<span class="zh">（拟合缩放定律来预测更大规模）</span></li>
+    <li>Extrapolate optimal recipe for target scale<span class="zh">（为目标规模外推最优配方）</span></li>
+    <li>Predict loss <em>before</em> running the expensive experiment<span class="zh">（在运行昂贵实验之前预测损失）</span></li>
+  </ol>
+
+  <p><strong>Chinchilla scaling:</strong> Given a compute budget $C \approx 6ND$ (FLOPs), how to split between model size $N$ and training tokens $D$? Compute-optimal: $D \approx 20N$. Example: 70B model trained on ~1.4T tokens.</p>
+  <p class="zh">Chinchilla 缩放：给定算力预算 $C \approx 6ND$，如何分配模型大小 $N$ 和训练 token 数 $D$？计算最优：$D \approx 20N$。例：70B 模型训练约 1.4T token。</p>
+
+  <p><strong>ISOFLOP curves:</strong> For multiple FLOPs budgets, find the optimal $N$, then fit a scaling law to extrapolate to larger budgets.</p>
+  <p class="zh">ISOFLOP 曲线：对多个 FLOPs 预算分别找最优 $N$，然后拟合缩放定律外推到更大预算。</p>
+
+  <p><strong>Key insight:</strong> Predictability is at least as important as optimality — we need <em>preregistered predictions</em> to validate our scaling laws.</p>
+  <p class="zh">关键洞察：可预测性至少和最优性一样重要——我们需要「预注册预测」来验证缩放定律。</p>
+
+  <h4 id="unit4-preview">Unit 4: Data Preview</h4>
+  <p class="zh">数据层面的完整流水线：</p>
+
+  <p><strong>Data sources:</strong> Internet webpages (Common Crawl), books, arXiv papers, GitHub code, Reddit, specialized corpora. Legal/copyright considerations are real.</p>
+  <p class="zh">数据来源：互联网网页（Common Crawl）、书籍、arXiv 论文、GitHub 代码、Reddit、专业语料。版权问题需要认真对待。</p>
+
+  <p><strong>Processing pipeline:</strong></p>
+  <p class="zh">处理流水线：</p>
+  <ol>
+    <li><strong>Text extraction:</strong> HTML/PDF → clean text (main content only)<span class="zh">（文本提取：从 HTML/PDF 中提取正文）</span></li>
+    <li><strong>Quality filtering:</strong> classifiers to keep high-quality, remove harmful content<span class="zh">（质量过滤：分类器筛选高质量内容、去除有害内容）</span></li>
+    <li><strong>Deduplication:</strong> Bloom filters, MinHash — saves compute and reduces memorization<span class="zh">（去重：Bloom filter、MinHash——节省算力、减少记忆化）</span></li>
+    <li><strong>Data mixing:</strong> upweight/downweight different sources for optimal downstream performance<span class="zh">（数据配比：调整不同来源的权重以优化下游表现）</span></li>
+  </ol>
+
+  <p><strong>Data across training stages:</strong></p>
+  <p class="zh">不同训练阶段的数据类型：</p>
+  <ul>
+    <li><strong>Pretraining:</strong> large, diverse web data<span class="zh">（预训练：大规模、多样化的网络数据）</span></li>
+    <li><strong>Mid-training:</strong> high-quality, long-context documents<span class="zh">（中期训练：高质量、长上下文文档）</span></li>
+    <li><strong>Post-training:</strong> supervised conversations, agentic traces with tool calling<span class="zh">（后训练：监督对话、带工具调用的 agent 轨迹）</span></li>
+  </ul>
+
+  <p><strong>Evaluation</strong> (also Lecture 12):</p>
+  <p class="zh">评估（也在 Lecture 12）：</p>
+  <ul>
+    <li><strong>Internal eval:</strong> perplexity on held-out data — smooth, fast, guides development<span class="zh">（内部评估：在留出数据上的困惑度——平滑、快速、指导开发）</span></li>
+    <li><strong>External eval:</strong> benchmarks (GPQA, HLE, SWE-Bench, Terminal-Bench) — ecological validity<span class="zh">（外部评估：基准测试——生态效度，衡量真实能力）</span></li>
+    <li><strong>Contamination:</strong> run perplexity on private, non-Internet documents to avoid train-test leakage<span class="zh">（污染问题：在私有、非互联网文档上测困惑度以避免训练-测试泄露）</span></li>
+  </ul>
+
+  <h4 id="unit5-preview">Unit 5: Alignment Preview</h4>
+  <p>After pretraining (pure next-token prediction), the model needs alignment: improve via <strong>weak supervision</strong> where critique is easier than generation.</p>
+  <p class="zh">预训练（纯下一 token 预测）后，模型需要对齐：通过<strong>弱监督</strong>改进——评判比生成容易。</p>
+
+  <p><strong>Basic template:</strong></p>
+  <p class="zh">基本模板：</p>
+  <ol>
+    <li>Generate model responses<span class="zh">（生成模型回复）</span></li>
+    <li>Score via humans, verifiers, or LM judges<span class="zh">（通过人类、验证器或 LM 评分）</span></li>
+    <li>Update model to prefer better responses<span class="zh">（更新模型使其偏好更好的回复）</span></li>
+  </ol>
+
+  <p><strong>Key algorithms:</strong></p>
+  <p class="zh">关键算法：</p>
+  <ul>
+    <li><strong>PPO</strong> (Proximal Policy Optimization) — classic RL approach, used in InstructGPT<span class="zh">（经典 RL 方法，InstructGPT 采用）</span></li>
+    <li><strong>DPO</strong> (Direct Preference Optimization) — simpler, uses preference pairs directly, no reward model<span class="zh">（更简单，直接用偏好数据对，不需要奖励模型）</span></li>
+    <li><strong>GRPO</strong> (Group Relative Policy Optimization) — removes value function, groups responses for comparison<span class="zh">（去掉价值函数，分组比较回复）</span></li>
+  </ul>
+  <p>Challenges: RL instability and tuning difficulty; requires new infrastructure (async inference rollouts); trade-off between systems efficiency and on-policyness.</p>
+  <p class="zh">挑战：RL 不稳定且难调参；需要新基础设施（异步推理 rollout）；系统效率与 on-policy 之间的权衡。</p>
+
   <!-- ══════════════════════════════════════════════ -->
-  <h3>Part 4: Tokenization</h3>
+  <h3 id="part5">Part 5: Tokenization</h3>
 
   <p>Inspired by <a href="https://www.youtube.com/watch?v=zduSFxRajkE" target="_blank">Andrej Karpathy's tokenization video ↗</a>. Play with tokenization interactively: <a href="https://tiktokenizer.vercel.app/?encoder=gpt2" target="_blank">tiktokenizer ↗</a></p>
 
@@ -265,9 +543,86 @@
   </blockquote>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3>Tokenization Mental Framework</h3>
+  <h3 id="part6">Part 6: Why Tokenization? The Trade-off Spectrum</h3>
+
+  <h4>Why can't we just feed raw text to a Transformer?</h4>
+  <p>A Transformer operates on <strong>sequences of vectors</strong>. It needs discrete integer IDs to index into an embedding table. Raw text (a sequence of Unicode characters / UTF-8 bytes) must first be converted into a bounded set of integers.</p>
+  <p class="zh">Transformer 的输入是<strong>向量序列</strong>，需要离散的整数 ID 来索引 embedding 表。原始文本（Unicode 字符 / UTF-8 字节序列）必须先转换为有限集合内的整数。</p>
+
+  <h4>Why not one-word-one-token?</h4>
+  <p>Natural languages have <strong>effectively infinite vocabularies</strong> — new words, typos, code, multilingual text. A word-level tokenizer either (a) has a huge sparse embedding table, or (b) maps unseen words to <code>UNK</code>, losing information forever.</p>
+  <p class="zh">自然语言的词汇量实质上是<strong>无限的</strong>——新词、拼写错误、代码、多语言文本。词级分词器要么 (a) embedding 表巨大且稀疏，要么 (b) 把没见过的词映射为 UNK，永久丢失信息。</p>
+
+  <h4>Why not character / byte level?</h4>
+  <p>Byte-level (vocab = 256) solves the OOV problem, but sequences become <strong>extremely long</strong>. Self-attention is $O(n^2)$ — doubling sequence length quadruples compute. A 1000-word document becomes ~5000 bytes vs ~1300 BPE tokens.</p>
+  <p class="zh">字节级（词表 = 256）解决了 OOV 问题，但序列变得<strong>极长</strong>。Self-attention 的复杂度是 $O(n^2)$——序列长度翻倍，计算量翻四倍。一篇 1000 词的文档大约 5000 字节 vs 1300 个 BPE token。</p>
+
+  <h4>The Tokenization Spectrum</h4>
+  <p>Tokenization is fundamentally a <strong>trade-off between vocabulary size and sequence length</strong>:</p>
+  <p class="zh">Tokenization 本质上是在<strong>词表大小和序列长度之间做权衡</strong>：</p>
+
+<pre><code>  Byte                    BPE                     Word
+   ◄──────────────────────┼──────────────────────►
+
+  Vocab: 256              ~50K-200K               Unbounded
+  Seq:   Very long        Moderate                Short
+  OOV:   None             None                    Yes
+  Sparse: No              Balanced                Very sparse
+  ───────────────────────────────────────────────────────
+  ← smaller vocab, longer seq    larger vocab, shorter seq →</code></pre>
+
+  <p><strong>BPE sits in the sweet spot</strong>: controllable vocabulary size (typically 32K–200K), good compression (~4x on English), no OOV, and data-driven — it adapts to whatever corpus you train on.</p>
+  <p class="zh"><strong>BPE 处于最佳位置</strong>：可控的词表大小（通常 32K–200K），良好的压缩率（英文约 4 倍），无 OOV，且是数据驱动的——会自适应训练语料。</p>
+
+  <blockquote>
+    Key insight: Tokenization is NOT just "how to split text." It determines the <strong>computational granularity</strong> of the Transformer — what the model "sees" as its atomic units, and how much compute it spends per unit of meaning.<br>
+    <span class="zh">核心洞察：Tokenization 不仅仅是「怎么切分文本」。它决定了 Transformer 的<strong>计算粒度</strong>——模型将什么视为原子单位，以及每单位意义消耗多少计算量。</span>
+  </blockquote>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="part7">Part 7: What Does BPE Optimize?</h3>
+
+  <h4>BPE's Implicit Objective</h4>
+  <p>BPE doesn't have an explicit loss function, but it implicitly optimizes a clear objective:</p>
+  <p class="zh">BPE 没有显式的损失函数，但它隐式地优化一个清晰的目标：</p>
+
+  <blockquote>
+    <strong>Maximize compression ratio</strong> (= bytes / tokens) subject to a fixed vocabulary budget.<br>
+    <span class="zh"><strong>最大化压缩率</strong>（= 字节数 / token 数），在固定词表预算下。</span>
+  </blockquote>
+
+  <p>At each step, BPE greedily merges the most frequent adjacent pair — this is exactly the pair whose merge maximally reduces the total sequence length. It's a <strong>greedy compression algorithm</strong>.</p>
+  <p class="zh">每一步，BPE 贪心地合并出现频率最高的相邻对——这恰好是合并后能最大程度缩短总序列长度的对。它是一个<strong>贪心压缩算法</strong>。</p>
+
+  <h4>Adaptive Computation</h4>
+  <p>BPE creates an interesting property: the Transformer <strong>allocates computation adaptively</strong> based on token frequency.</p>
+  <p class="zh">BPE 创造了一个有趣的特性：Transformer 根据 token 频率<strong>自适应地分配计算量</strong>。</p>
+
+  <ul>
+    <li><strong>Common patterns</strong> (e.g., <code>" the"</code>, <code>" function"</code>) → single token → less compute per unit of meaning<span class="zh">（常见模式→单个 token→每单位含义消耗更少计算）</span></li>
+    <li><strong>Rare patterns</strong> (e.g., <code>"xylophonist"</code>) → many tokens → more compute per unit of meaning<span class="zh">（罕见模式→多个 token→每单位含义消耗更多计算）</span></li>
+  </ul>
+
+  <p>This is actually desirable! Rare/unusual inputs are harder to predict, so they <em>should</em> get more model capacity. It's an implicit form of <strong>adaptive computation</strong> — the model automatically spends more "thinking" on surprising content.</p>
+  <p class="zh">这其实是好事！罕见/不寻常的输入更难预测，所以<em>应该</em>获得更多模型容量。这是一种隐式的<strong>自适应计算</strong>——模型自动在「令人意外的内容」上花更多「思考」。</p>
+
+  <h4>The Tokenizer-Free Dream</h4>
+  <p>The ultimate dream is architectures that operate <strong>directly on bytes</strong> without any tokenizer: ByT5, MegaByte, BLT (Byte Latent Transformer).</p>
+  <p class="zh">终极理想是<strong>直接在字节上操作</strong>的架构，完全不需要分词器：ByT5、MegaByte、BLT。</p>
+
+  <p>Why is this hard? Two requirements any solution must satisfy:</p>
+  <p class="zh">为什么这很难？任何方案都必须满足两个条件：</p>
+  <ol>
+    <li><strong>Chunked processing:</strong> The model must operate on abstractions/chunks, not individual bytes — otherwise the $O(n^2)$ attention cost is prohibitive.<span class="zh">（分块处理：模型必须在抽象/块上操作，而非逐字节——否则 $O(n^2)$ 的注意力代价太大。）</span></li>
+    <li><strong>Variable-length chunks:</strong> The chunks should be variable-length, allocating more capacity to "interesting" parts — exactly what BPE does implicitly.<span class="zh">（变长分块：块应该是变长的，把更多容量分给「有趣」的部分——正是 BPE 隐式做的事情。）</span></li>
+  </ol>
+
+  <p>Until byte-level models can match BPE-based models at frontier scale, BPE remains the practical choice.</p>
+  <p class="zh">在字节级模型能在前沿规模上匹配 BPE 模型之前，BPE 仍然是实际选择。</p>
+
+  <h4>Tokenization Mental Framework</h4>
   <p>Think of tokenization as a simple framework. Whenever you see a tokenizer, think about these three goals:</p>
-  <p class="zh">把 Tokenization 记成一个非常简单的框架。以后看到 tokenizer，脑子里想这四件事：</p>
+  <p class="zh">把 Tokenization 记成一个非常简单的框架。以后看到 tokenizer，脑子里想这三件事：</p>
 
 <pre><code>            Raw text / bytes
                   │
@@ -290,27 +645,334 @@
                   ▼
              Transformer</code></pre>
 
-  <p>The ultimate goal of tokenization is NOT "splitting sentences into words." More precisely:</p>
-  <p class="zh">所以 tokenization 的终极目标并不是「把句子拆成单词」。更准确地说是：</p>
-
   <blockquote>
-    Find a discrete representation that can encode any raw input, while striking a good balance between <strong>vocabulary size</strong>, <strong>sequence length</strong>, and <strong>computational efficiency</strong>.<br>
-    <span class="zh">找到一种离散表示，使任意原始输入都可以表示，同时在 vocabulary size、sequence length 和模型计算效率之间取得好的平衡。</span>
-  </blockquote>
-
-  <p>BPE's core strategy is:</p>
-  <p class="zh">而 BPE 的核心策略就是：</p>
-
-  <blockquote>
-    Merge frequently co-occurring byte/character sequences into a single token, thereby <strong>compressing common language patterns</strong>.<br>
-    <span class="zh">把经常一起出现的 byte / character sequence 合并成一个 token，从而压缩常见语言模式。</span>
+    The ultimate goal of tokenization is NOT "splitting sentences into words." It is: find a discrete representation that can encode any raw input, while striking a good balance between <strong>vocabulary size</strong>, <strong>sequence length</strong>, and <strong>computational efficiency</strong>.<br>
+    <span class="zh">Tokenization 的终极目标不是「把句子拆成单词」，而是：找到一种离散表示，使任意原始输入都可以表示，同时在词表大小、序列长度和计算效率之间取得好的平衡。</span>
   </blockquote>
 
   <p>Once you truly understand this, implementing a BPE tokenizer in Assignment 1 won't feel like just writing a string processing algorithm — you are actually <strong>designing the input space and computational granularity</strong> that the Transformer sees.</p>
   <p class="zh">如果你把这一点真正理解了，后面 CS336 让你自己实现 BPE tokenizer 时，就不会觉得自己只是在写一个字符串处理算法——你实际上是在设计 Transformer 所看到的输入空间和计算粒度。</p>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3>Assignment 1 Preview</h3>
+  <h3 id="part8">Part 8: Attention Fundamentals</h3>
+
+  <p>Tokenization produces a sequence of token IDs → embeddings. But how does the Transformer <em>process</em> this sequence? The answer is <strong>attention</strong> — the core mechanism that makes Transformers work.</p>
+  <p class="zh">Tokenization 产生 token ID 序列→嵌入向量。但 Transformer 如何<em>处理</em>这个序列？答案是<strong>注意力机制</strong>——Transformer 的核心运作机制。</p>
+
+  <h4>Why Do We Need Attention?</h4>
+  <p>Consider a simple approach: process each token independently through a feedforward network. The problem: <strong>no information flows between positions</strong>. The model can't understand context — it doesn't know what comes before or after each token.</p>
+  <p class="zh">考虑一个简单方案：每个 token 独立通过前馈网络。问题是：<strong>位置之间没有信息流动</strong>。模型无法理解上下文——它不知道每个 token 前后是什么。</p>
+
+  <p>We need a mechanism that lets each token <strong>look at other tokens</strong> to gather context. This is attention.</p>
+  <p class="zh">我们需要一种机制，让每个 token 能<strong>看到其他 token</strong>来收集上下文。这就是注意力。</p>
+
+  <h4>Self-Attention Intuition</h4>
+  <p>Self-attention answers the question: <em>"For each token in the sequence, which other tokens should I pay attention to, and how much?"</em></p>
+  <p class="zh">自注意力回答的问题是：<em>「对于序列中的每个 token，我应该关注哪些其他 token，关注多少？」</em></p>
+
+  <p>Example: In <code>"The cat sat on the mat because <strong>it</strong> was tired"</code>, the token <code>"it"</code> needs to attend strongly to <code>"cat"</code> to resolve the pronoun.</p>
+  <p class="zh">例子：在 "The cat sat on the mat because <strong>it</strong> was tired" 中，token "it" 需要强烈关注 "cat" 来消解代词指代。</p>
+
+  <h4>Query, Key, Value (Q, K, V)</h4>
+  <p>Each token's embedding $x_i$ is projected into three vectors:</p>
+  <p class="zh">每个 token 的嵌入向量 $x_i$ 被投影为三个向量：</p>
+
+  <ul>
+    <li><strong>Query ($q_i$)</strong>: "What am I looking for?" — represents the current token's information need<span class="zh">（「我在找什么？」——代表当前 token 的信息需求）</span></li>
+    <li><strong>Key ($k_j$)</strong>: "What do I contain?" — represents what information each token offers<span class="zh">（「我包含什么？」——代表每个 token 提供的信息）</span></li>
+    <li><strong>Value ($v_j$)</strong>: "What do I provide if selected?" — the actual content to aggregate<span class="zh">（「如果被选中，我提供什么？」——实际要聚合的内容）</span></li>
+  </ul>
+
+  <p>$q_i = W_Q x_i, \quad k_j = W_K x_j, \quad v_j = W_V x_j$</p>
+  <p class="zh">其中 $W_Q, W_K, W_V$ 是可学习的投影矩阵。</p>
+
+  <h4>Attention Computation</h4>
+  <p>The attention score between token $i$ (query) and token $j$ (key) is their dot product, scaled and softmaxed:</p>
+  <p class="zh">token $i$（query）和 token $j$（key）之间的注意力分数是它们的点积，经过缩放和 softmax：</p>
+
+  $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
+
+  <p>Step by step:</p>
+  <p class="zh">逐步分解：</p>
+  <ol>
+    <li><strong>Compute scores:</strong> $s_{ij} = q_i \cdot k_j$ — how relevant is token $j$ to token $i$?<span class="zh">（计算分数：token $j$ 对 token $i$ 的相关度）</span></li>
+    <li><strong>Scale:</strong> divide by $\sqrt{d_k}$ to prevent softmax saturation with large $d_k$<span class="zh">（缩放：除以 $\sqrt{d_k}$ 防止 softmax 在 $d_k$ 较大时饱和）</span></li>
+    <li><strong>Softmax:</strong> convert scores to probabilities (weights sum to 1)<span class="zh">（Softmax：将分数转为概率，权重和为 1）</span></li>
+    <li><strong>Weighted sum:</strong> output $= \sum_j \alpha_{ij} v_j$ — aggregate values weighted by attention<span class="zh">（加权求和：按注意力权重聚合 value 向量）</span></li>
+  </ol>
+
+  <h4>Causal (Autoregressive) Attention</h4>
+  <p>For language modeling, we predict the <strong>next</strong> token. Token $i$ must only attend to tokens $\leq i$ (past and present), never to future tokens. This is enforced by masking: set $s_{ij} = -\infty$ for $j > i$ before softmax.</p>
+  <p class="zh">在语言建模中，我们预测<strong>下一个</strong> token。Token $i$ 只能关注位置 $\leq i$（过去和当前），绝不能看到未来的 token。通过掩码实现：在 softmax 之前将 $j > i$ 的分数设为 $-\infty$。</p>
+
+  $$\text{mask}_{ij} = \begin{cases} 0 & \text{if } j \leq i \\ -\infty & \text{if } j > i \end{cases}$$
+
+  <p>This creates a <strong>lower-triangular</strong> attention pattern — each token only sees itself and its predecessors.</p>
+  <p class="zh">这产生了<strong>下三角</strong>注意力模式——每个 token 只能看到自己和前面的 token。</p>
+
+  <h4>Multi-Head Attention</h4>
+  <p>A single attention head can only capture one type of relationship. <strong>Multi-head attention</strong> runs $h$ independent attention heads in parallel, each with its own $W_Q, W_K, W_V$ projections, then concatenates the results:</p>
+  <p class="zh">单个注意力头只能捕获一种关系类型。<strong>多头注意力</strong>并行运行 $h$ 个独立的注意力头，每个有自己的 $W_Q, W_K, W_V$，然后拼接结果：</p>
+
+  $$\text{MultiHead}(X) = \text{Concat}(\text{head}_1, \ldots, \text{head}_h) \, W_O$$
+
+  <p>Each head operates on $d_k = d_{\text{model}} / h$ dimensions. Different heads can learn different relationship types: syntactic, semantic, positional, etc.</p>
+  <p class="zh">每个头在 $d_k = d_{\text{model}} / h$ 维上操作。不同的头可以学习不同类型的关系：句法、语义、位置等。</p>
+
+  <h4>How Attention Connects to Tokenization</h4>
+  <p>Tokenization and attention are deeply coupled:</p>
+  <p class="zh">Tokenization 和 attention 是深度耦合的：</p>
+
+  <ul>
+    <li><strong>Sequence length determines attention cost:</strong> Attention is $O(n^2)$. Fewer tokens (higher compression) = cheaper attention. This is the main reason we don't use byte-level tokenization.<span class="zh">（序列长度决定注意力代价：注意力是 $O(n^2)$。token 越少（压缩率越高）= 注意力越便宜。这是我们不用字节级分词的主要原因。）</span></li>
+    <li><strong>Token granularity determines what attention can "see":</strong> If <code>"New York"</code> is one token, attention treats it as an atomic unit. If it's two tokens, the model must learn to compose them.<span class="zh">（Token 粒度决定注意力能「看到」什么：如果 "New York" 是一个 token，注意力把它当作原子单位。如果是两个 token，模型必须学会组合它们。）</span></li>
+    <li><strong>Context window is measured in tokens, not words:</strong> With BPE's ~4x compression, a 128K-token context window covers ~500K bytes of text. With byte-level, it would only cover 128K bytes.<span class="zh">（上下文窗口以 token 计，不是字数：BPE 约 4 倍压缩下，128K token 窗口覆盖约 500K 字节文本。字节级只能覆盖 128K 字节。）</span></li>
+  </ul>
+
+  <blockquote>
+    Think of it this way: <strong>tokenization defines the resolution</strong> at which the Transformer perceives text. BPE gives a variable-resolution view — high resolution (many tokens) for rare content, low resolution (few tokens) for common patterns. Attention then operates at this resolution to build understanding.<br>
+    <span class="zh">可以这样理解：<strong>tokenization 定义了 Transformer 感知文本的分辨率</strong>。BPE 提供了可变分辨率的视角——对罕见内容高分辨率（多 token），对常见模式低分辨率（少 token）。然后注意力在这个分辨率上运作来构建理解。</span>
+  </blockquote>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="part9">Part 9: Transformer Architecture Walkthrough</h3>
+
+  <p>This section walks through the GPT-style <strong>decoder-only Transformer</strong> end-to-end. The core idea:</p>
+  <p class="zh">本节端到端地拆解 GPT 风格的 <strong>decoder-only Transformer</strong>。核心思路：</p>
+  <blockquote>
+    Input tokens → embeddings → many Transformer Blocks → output next-token probabilities.<br>
+    <span class="zh">输入 token → 嵌入向量 → 经过很多 Transformer Block → 输出下一个 token 的概率。</span>
+  </blockquote>
+
+  <div style="text-align:center;margin:24px 0;">
+    <img src="images/transformer-architecture.png" alt="GPT-style Transformer Architecture" style="max-width:min(100%,720px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Left: overall model pipeline. Right: inside one Transformer Block.</p>
+  </div>
+
+  <h4>Step 1: Inputs → Token Embedding</h4>
+  <p>Raw text goes through the tokenizer (BPE) to become token IDs — just integer indices, not yet vectors.</p>
+  <p class="zh">原始文本经过分词器（BPE）变成 token ID——只是整数编号，还不是向量。</p>
+<pre><code>"The cat sat"
+     ↓ tokenizer
+[101, 537, 892]    ← token IDs (integers)</code></pre>
+
+  <p><strong>Token embedding</strong> maps each ID to a learnable vector of dimension $d_{\text{model}}$:</p>
+  <p class="zh"><strong>Token embedding</strong> 把每个 ID 映射为一个可学习的 $d_{\text{model}}$ 维向量：</p>
+<pre><code>d_model = 4  (just for illustration)
+
+"The" → [0.2, -0.5,  1.1, 0.7]
+"cat" → [0.8,  0.4, -0.2, 1.3]
+"sat" → [-0.1, 0.9,  0.5, 0.2]</code></pre>
+  <p>These vectors are <em>not</em> hand-designed — each number is learned during training.<span class="zh">（这些向量不是人为设计的——每个数字都是训练过程中学出来的。）</span></p>
+
+  <h4>Step 2: Position Embedding — "Where Am I?"</h4>
+  <p>Token embeddings alone don't carry position information. But word order matters hugely:</p>
+  <p class="zh">光看 token embedding，模型不知道顺序。但语序非常重要：</p>
+<pre><code>"dog bites man"  ≠  "man bites dog"</code></pre>
+
+  <p><strong>Position embeddings</strong> are added element-wise to token embeddings, so the model knows both <em>"what I am"</em> and <em>"where I am"</em>:</p>
+  <p class="zh"><strong>位置嵌入</strong>与 token embedding 逐元素相加，让模型同时知道「我是谁」和「我在哪」：</p>
+<pre><code>cat token embedding  = [0.8, 0.4, -0.2, 1.3]
+position 2 embedding = [0.1, 0.2,  0.1, -0.1]
+─────────────────────────────────────────────
+actual input         = [0.9, 0.6, -0.1, 1.2]  ← element-wise addition</code></pre>
+
+  <h4>Step 3: The Tensor Shape — (batch_size, seq_len, d_model)</h4>
+  <p>This shape appears throughout the model and is critical to understand:</p>
+  <p class="zh">这个形状贯穿整个模型，理解它非常关键：</p>
+  <table>
+    <tr><th>Dimension</th><th>Meaning</th><th>Example</th><th class="zh">中文说明</th></tr>
+    <tr><td><code>batch_size</code></td><td>How many sentences at once</td><td>2</td><td class="zh">一次处理几句话</td></tr>
+    <tr><td><code>seq_len</code></td><td>How many tokens per sentence</td><td>3</td><td class="zh">每句话几个 token</td></tr>
+    <tr><td><code>d_model</code></td><td>How many numbers per token</td><td>4</td><td class="zh">每个 token 用几个数字表示</td></tr>
+  </table>
+  <p>A tensor is just numbers arranged in a structured grid. <code>(2, 3, 4)</code> = 2 sentences × 3 tokens × 4 numbers each.</p>
+  <p class="zh">Tensor 就是按照某种结构排列的很多数字。(2, 3, 4) = 2 句话 × 每句 3 个 token × 每个 token 4 个数字。</p>
+
+  <h4>Step 4: Stacked Transformer Blocks</h4>
+  <p>The embeddings pass through $N$ identical Transformer Blocks (e.g., $N = 24$ for a medium model):</p>
+  <p class="zh">嵌入向量通过 $N$ 个相同的 Transformer Block（例如中等模型 $N = 24$）：</p>
+<pre><code>Block 1 → Block 2 → Block 3 → ... → Block N</code></pre>
+
+  <p>Each block refines the representation. Early on, <code>"bank"</code> is just the word "bank." After many layers, if the context is <code>"I deposited money in the bank"</code>, the vector shifts toward "financial institution." If the context is <code>"I sat by the river bank"</code>, it shifts toward "riverbank."</p>
+  <p class="zh">每层都在精炼表示。最初 "bank" 只是「bank 这个词」。经过很多层后，如果上下文是 "I deposited money in the bank"，向量会偏向「金融机构」；如果是 "I sat by the river bank"，会偏向「河岸」。</p>
+
+  <blockquote>
+    Shape stays the same throughout: <code>(batch_size, seq_len, d_model)</code> in = <code>(batch_size, seq_len, d_model)</code> out. The numbers change, but the structure doesn't. <strong>Same shape, richer meaning.</strong><br>
+    <span class="zh">形状自始至终不变：输入 (batch_size, seq_len, d_model)，输出也是。数字变了，结构没变。<strong>形状不变，含义越来越丰富。</strong></span>
+  </blockquote>
+
+  <h4>Step 5: Inside One Transformer Block</h4>
+  <p>Each block has only two core computations, plus stability components:</p>
+  <p class="zh">每个 block 只有两个核心计算，加上稳定性组件：</p>
+
+  <table>
+    <tr><th>Component</th><th>Role</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Causal Multi-Head Self-Attention</strong></td><td>Tokens communicate with each other</td><td class="zh">Token 之间交流信息</td></tr>
+    <tr><td><strong>Position-Wise Feed-Forward (MLP)</strong></td><td>Each token computes internally</td><td class="zh">每个 token 内部独立计算</td></tr>
+    <tr><td>Norm (RMSNorm)</td><td>Stabilize value scales across layers</td><td class="zh">跨层稳定数值范围</td></tr>
+    <tr><td>Residual Connection (Add)</td><td>Preserve original information + help gradients flow</td><td class="zh">保留原始信息 + 帮助梯度传播</td></tr>
+    <tr><td>Dropout</td><td>Regularization — randomly zero out activations during training</td><td class="zh">正则化——训练时随机置零部分激活值</td></tr>
+  </table>
+
+  <p>Simplified mental model of one block:</p>
+  <p class="zh">一个 block 的简化心智模型：</p>
+<pre><code>Input → Attention → MLP → Output</code></pre>
+
+  <h4>Step 5a: Norm → Why Normalize?</h4>
+  <p>With dozens or hundreds of layers, values can grow or shrink uncontrollably. <strong>Normalization</strong> keeps the scale of numbers stable across layers. Modern LLMs typically use <strong>RMSNorm</strong> (simpler than LayerNorm).</p>
+  <p class="zh">几十甚至上百层网络，数值可能不受控地变大或变小。<strong>归一化</strong>让数值范围在各层间保持稳定。现代 LLM 通常用 <strong>RMSNorm</strong>（比 LayerNorm 更简单）。</p>
+
+  <h4>Step 5b: Causal Multi-Head Self-Attention</h4>
+  <p>Three concepts packed into one name:</p>
+  <p class="zh">一个名字包含三个概念：</p>
+
+  <p><strong>Self-Attention</strong> — tokens in the same sequence look at each other to gather context:</p>
+  <p class="zh"><strong>自注意力</strong>——同一序列中的 token 互相查看以获取上下文：</p>
+<pre><code>"The cat sat on the mat"
+
+Processing "sat" → attends to:
+  "The"  — low attention
+  "cat"  — HIGH attention (who sat?)
+  "sat"  — some self-attention</code></pre>
+
+  <p><strong>Causal</strong> — each token can only see itself and <em>past</em> tokens, never the future (otherwise the model is cheating at next-token prediction):</p>
+  <p class="zh"><strong>因果</strong>——每个 token 只能看到自己和<em>前面</em>的 token，绝不能看未来（否则在预测下一个 token 时就是作弊）：</p>
+<pre><code>        The  cat  sat  on   mat
+The      ✓    ✗    ✗    ✗    ✗
+cat      ✓    ✓    ✗    ✗    ✗
+sat      ✓    ✓    ✓    ✗    ✗
+on       ✓    ✓    ✓    ✓    ✗
+mat      ✓    ✓    ✓    ✓    ✓
+                                  ← causal mask (lower-triangular)</code></pre>
+
+  <p><strong>Multi-Head</strong> — attention runs multiple times in parallel with different learned projections. Different heads can capture different relationships:</p>
+  <p class="zh"><strong>多头</strong>——注意力用不同的学习投影并行运行多次。不同的头可以捕获不同的关系：</p>
+  <ul>
+    <li>Head 1 → syntactic (who is the subject?)<span class="zh">（句法：谁是主语？）</span></li>
+    <li>Head 2 → semantic similarity<span class="zh">（语义相似性）</span></li>
+    <li>Head 3 → positional / local patterns<span class="zh">（位置/局部模式）</span></li>
+    <li>Head 4 → long-range dependencies<span class="zh">（长距离依赖）</span></li>
+  </ul>
+  <p>Multi-Head Attention = looking at context from multiple perspectives simultaneously.<span class="zh">（多头注意力 = 同时从多个视角审视上下文。）</span></p>
+
+  <h4>Step 5c: Dropout</h4>
+  <p>During training, randomly zeroes out some activations to prevent overfitting:</p>
+  <p class="zh">训练时随机将部分激活值置零，防止过拟合：</p>
+<pre><code>[0.2, 0.8, -0.5, 1.1]  → dropout →  [0.2, 0, -0.5, 0]</code></pre>
+  <p>Forces the model to not rely on any single neuron.<span class="zh">（迫使模型不过度依赖某几个固定的神经元。）</span></p>
+
+  <h4>Step 5d: Residual Connection (Add) — The Bypass Highway</h4>
+  <p>The bypass arrows in the diagram represent <strong>residual connections</strong>. Instead of replacing the input, attention's output is <em>added</em> to the original:</p>
+  <p class="zh">图中的绕路箭头就是<strong>残差连接</strong>。不是丢掉原始输入，而是把 attention 的输出<em>加到</em>原始输入上：</p>
+
+  $$x_1 = x + \text{Attention}(\text{Norm}(x))$$
+
+  <p>Why add back? The model doesn't start from scratch each layer — it <strong>incrementally adds new information</strong> to existing representations:</p>
+  <p class="zh">为什么要加回来？模型不是每层推倒重来——而是在已有表示上<strong>逐步叠加新信息</strong>：</p>
+<pre><code>Layer 0: "bank" (just the word)
+Layer 5: "bank" + money context
+Layer 10: "bank" + financial meaning
+Layer 20: "bank" + full sentence relationships</code></pre>
+  <p>Residual connections also help gradients flow through very deep networks during training.<span class="zh">（残差连接还帮助梯度在非常深的网络中传播。）</span></p>
+
+  <h4>Step 5e: Position-Wise Feed-Forward Network (MLP)</h4>
+  <p>After attention lets tokens communicate, the <strong>feed-forward network</strong> lets each token think independently. It's a simple MLP applied to each token position separately:</p>
+  <p class="zh">注意力让 token 之间交流后，<strong>前馈网络</strong>让每个 token 独立思考。它是一个简单的 MLP，分别应用于每个 token 位置：</p>
+<pre><code>d_model → d_ff → d_model
+  4096  → 11008 → 4096     (expand, activate, project back)</code></pre>
+
+  <p>Key distinction — worth memorizing:</p>
+  <p class="zh">关键区别——值得牢记：</p>
+  <blockquote>
+    <strong>Attention = communication</strong> (tokens talk to each other)<br>
+    <strong>FFN = computation</strong> (each token processes independently)<br>
+    <span class="zh"><strong>Attention = 交流</strong>（token 之间互相交流）<br><strong>FFN = 计算</strong>（每个 token 独立处理）</span>
+  </blockquote>
+
+  <p>Why "position-wise"? Because each token position uses the <em>same</em> MLP independently — <code>"The"</code>, <code>"cat"</code>, and <code>"sat"</code> each go through FFN separately. Cross-token interaction only happens in Attention.<span class="zh">（为什么叫 "position-wise"？因为每个 token 位置独立使用相同的 MLP。token 之间的交互只在 Attention 中发生。）</span></p>
+
+  <h4>Step 5f: Complete Block — Two Lines of Math</h4>
+  <p>The entire Transformer Block boils down to two equations:</p>
+  <p class="zh">整个 Transformer Block 可以浓缩为两个等式：</p>
+
+  $$x_1 = x + \text{Attention}(\text{Norm}(x))$$
+  $$x_2 = x_1 + \text{FFN}(\text{Norm}(x_1))$$
+
+  <p>That's it. Normalize → Attention → Add back → Normalize → FFN → Add back. Repeat $N$ times.</p>
+  <p class="zh">就这些。归一化 → 注意力 → 加回来 → 归一化 → FFN → 加回来。重复 $N$ 次。</p>
+
+  <h4>Step 6: Final Norm → Linear → Softmax</h4>
+  <p>After all $N$ blocks, the final token's representation needs to become a probability distribution over the vocabulary:</p>
+  <p class="zh">经过所有 $N$ 个 block 后，最后一个 token 的表示需要变成词表上的概率分布：</p>
+
+  <ol>
+    <li><strong>Final Norm</strong> — stabilize one last time<span class="zh">（最终归一化——最后稳定一次数值）</span></li>
+    <li><strong>Linear layer</strong> — project from $d_{\text{model}}$ to vocabulary size, producing <strong>logits</strong> (raw scores, not probabilities):<span class="zh">（线性层——从 $d_{\text{model}}$ 投影到词表大小，产生 <strong>logits</strong>（原始分数，还不是概率）：）</span>
+<pre><code>[0.4, 1.2, -0.3, 0.8]   →   Linear   →   [1.2, -0.4, 3.1, 0.7, 0.2]
+     d_model=4                              vocab_size=5 (logits)</code></pre>
+    </li>
+    <li><strong>Softmax</strong> — convert logits to probabilities (sum to 1.0):<span class="zh">（Softmax——将 logits 转为概率（总和为 1.0）：）</span>
+<pre><code>logits:         cat=1.2  dog=-0.4  mat=3.1  sat=0.7  the=0.2
+                         ↓ softmax
+probabilities:  cat=0.10 dog=0.02  mat=0.70 sat=0.11 the=0.07
+                                                     sum = 1.00</code></pre>
+    </li>
+  </ol>
+
+  <p>The model predicts: next token is most likely <code>"mat"</code> (70%).</p>
+  <p class="zh">模型预测：下一个 token 最可能是 "mat"（70%）。</p>
+
+  <h4>Step 7: Autoregressive Generation</h4>
+  <p>This is how ChatGPT generates text — one token at a time:</p>
+  <p class="zh">这就是 ChatGPT 生成文本的方式——一次一个 token：</p>
+<pre><code>Input:  "The cat sat on the"  → predict → "mat"  (70%)
+Input:  "The cat sat on the mat"  → predict → "."
+Input:  "The cat sat on the mat."  → predict → [END]</code></pre>
+  <p>Each step, the full sequence is fed back in, and the model predicts only the next token. This is <strong>autoregressive generation</strong>.<span class="zh">（每一步，完整序列重新输入，模型只预测下一个 token。这就是<strong>自回归生成</strong>。）</span></p>
+
+  <h4>Transformer Architecture Summary</h4>
+  <p>Compress the entire architecture into one mental model:</p>
+  <p class="zh">把整个架构压缩成一个心智模型：</p>
+<pre><code>Raw text
+   ↓
+Tokenizer (BPE)
+   ↓
+Token IDs
+   ↓
+Token Embedding + Position Embedding
+   ↓
+┌─────────────────────────────────┐
+│      Transformer Block  × N    │
+│                                 │
+│  Attention  — tokens communicate│
+│  FFN / MLP  — tokens compute   │
+│  Residual + Norm — stay stable  │
+└─────────────────────────────────┘
+   ↓
+Final Norm
+   ↓
+Linear → vocab logits
+   ↓
+Softmax → next-token probabilities</code></pre>
+
+  <p><strong>5 core concepts to remember:</strong></p>
+  <p class="zh"><strong>5 个核心概念：</strong></p>
+  <ol>
+    <li><strong>Embedding</strong> — token ID → learnable vector<span class="zh">（把 token ID 变成可学习的向量）</span></li>
+    <li><strong>Position</strong> — tells the model where each token is<span class="zh">（告诉模型每个 token 在哪个位置）</span></li>
+    <li><strong>Attention</strong> — lets tokens gather information from each other<span class="zh">（让 token 之间交流信息）</span></li>
+    <li><strong>FFN / MLP</strong> — lets each token do its own computation<span class="zh">（让每个 token 自己进一步计算）</span></li>
+    <li><strong>Softmax</strong> — turns model output into next-token probabilities<span class="zh">（把模型输出转成下一个 token 的概率）</span></li>
+  </ol>
+
+  <blockquote>
+    Transformer Block = Attention + Feed-Forward, with Norm and Residual Connections for training stability.<br>
+    <span class="zh">Transformer Block = Attention + Feed-Forward，加上 Norm 和残差连接保证训练稳定性。</span>
+  </blockquote>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="assignment">Assignment 1 Preview</h3>
   <p>GitHub: <a href="https://github.com/stanford-cs336/assignment1-basics" target="_blank">assignment1-basics ↗</a></p>
   <p class="zh">作业 1 需要从零实现以下内容（不使用框架现成组件）：</p>
   <ul>
@@ -322,7 +984,7 @@
   </ul>
 
   <!-- ══════════════════════════════════════════════ -->
-  <h3>My Notes & Questions</h3>
+  <h3 id="my-notes">My Notes &amp; Questions</h3>
   <!-- Add your personal notes, questions, and insights here as you study -->
 
   <div class="pager"><span></span><a href="lec02.html" style="text-align:right"><span class="dir">Next</span><span class="title">PyTorch & Resource Accounting</span></a></div>
