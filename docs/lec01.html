@@ -254,6 +254,12 @@
   </table>
 
   <h4 id="unit2-preview">Unit 2: Systems — Resource Accounting</h4>
+
+  <blockquote>
+    <strong>The key insight of systems optimization:</strong> Moving data in memory is surprisingly expensive — often <em>more</em> expensive than the computation itself. The GPU can multiply numbers blazingly fast, but it spends most of its time <em>waiting for data to arrive</em> from memory. The entire systems story — from kernels to parallelism to inference — is about one thing: <strong>how to minimize data movement</strong>.<br>
+    <span class="zh"><strong>系统优化的核心洞察：</strong>在内存中搬运数据非常昂贵——通常比计算本身<em>更</em>昂贵。GPU 能飞速做乘法，但大部分时间都在<em>等数据从显存送过来</em>。从核函数到并行化到推理，整个系统的故事都围绕一件事：<strong>如何最小化数据搬运</strong>。</span>
+  </blockquote>
+
   <p>Before optimizing anything, you need to <strong>measure</strong>. Resource accounting answers: how much compute and memory does my model need?</p>
   <p class="zh">在优化任何东西之前，你需要<strong>度量</strong>。资源核算回答：我的模型需要多少计算量和显存？</p>
 
