@@ -50,15 +50,16 @@
 
   <!-- ════════════════════════════════════════════════════
        NOTES — the main content
-       Structure: h2#notes > h3#partN > h4 subsections
-       All h2[id] and h3[id] appear in the auto-generated TOC.
+       Structure: h2#notes > h3#sN (sections) > h4#sN-M (subsections)
+       Uses paper-style numbering: 1., 1.1, 1.1.1
+       All h2[id], h3[id], h4[id] appear in the auto-generated TOC.
        ════════════════════════════════════════════════════ -->
   <h2 id="notes">Notes</h2>
 
-  <!-- ── Part 1 ── -->
-  <h3 id="part1">Part 1: Section Title</h3>
+  <!-- ── Section 1 ── -->
+  <h3 id="s1">1. Section Title</h3>
 
-  <h4>Subsection Title</h4>
+  <h4 id="s1-1">1.1 Subsection Title</h4>
   <p>English content.</p>
   <p class="zh">中文注释段落。</p>
 
@@ -91,18 +92,16 @@
   </div>
   -->
 
-  <!-- ── Part 2 ── -->
-  <h3 id="part2">Part 2: Section Title</h3>
+  <!-- ── Section 2 ── -->
+  <h3 id="s2">2. Section Title</h3>
+  <h4 id="s2-1">2.1 Subsection Title</h4>
   <p>More content...</p>
 
   <!-- ════════════════════════════════════════════════════
-       ASSIGNMENT PREVIEW (if applicable)
+       ASSIGNMENT LINK (if applicable)
        ════════════════════════════════════════════════════ -->
-  <h3 id="assignment">Assignment X Preview</h3>
-  <p>GitHub: <a href="REPO_URL" target="_blank">assignmentX-name ↗</a></p>
-  <ul>
-    <li>Task 1<span class="zh">（中文说明）</span></li>
-  </ul>
+  <h3 id="assignment">Related Assignment</h3>
+  <p><a href="aX.html"><strong>→ Assignment X: Name</strong></a></p>
 
   <!-- ════════════════════════════════════════════════════
        MY NOTES — personal questions, insights, connections

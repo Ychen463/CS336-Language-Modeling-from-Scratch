@@ -22,7 +22,8 @@
     <ul>
       <li>Build everything from scratch: BPE tokenizer, Transformer, AdamW optimizer, training loop — no high-level framework components.<br><span class="zh">从零构建一切：BPE 分词器、Transformer、AdamW 优化器、训练循环——不使用高级框架组件。</span></li>
       <li>Train on TinyStories (small) and OpenWebText (large). Leaderboard: minimize perplexity in 45 minutes on a B200.<br><span class="zh">在 TinyStories（小）和 OpenWebText（大）上训练。排行榜：在 B200 上 45 分钟内最小化困惑度。</span></li>
-      <li>Resource accounting: understand FLOPs and memory usage of your model.<br><span class="zh">资源核算：理解模型的 FLOPs 和显存用量。</span></li>
+      <li>Resource accounting: understand FLOPs ($6ND$), memory breakdown, and roofline analysis to know your model's bottlenecks.<br><span class="zh">资源核算：理解 FLOPs（$6ND$）、显存分解和 roofline 分析以了解模型瓶颈。</span></li>
+      <li>Systems preview: kernels (minimize data movement), parallelism (shard across GPUs), inference (prefill vs decode).<br><span class="zh">系统预览：核函数（最小化数据搬运）、并行化（跨 GPU 分片）、推理（预填充 vs 解码）。</span></li>
     </ul>
   </div>
 
@@ -55,9 +56,20 @@
     </div>
   </div>
 
+  <div class="concepts-group">
+    <div class="concepts-group-title">Systems &amp; Resource Accounting</div>
+    <div class="concepts">
+      <div><strong>6ND Rule</strong> — Total training FLOPs ≈ $6ND$ ($N$ = params, $D$ = tokens). Forward ≈ $2ND$, backward ≈ $4ND$. Simple but powerful for compute budgeting.<br><span class="zh">6ND 法则——训练总 FLOPs ≈ $6ND$。前向 ≈ $2ND$，反向 ≈ $4ND$。简单但强大的算力预算工具。</span></div>
+      <div><strong>Arithmetic Intensity</strong> — FLOPs / bytes moved. Determines whether an operation is compute-bound (high) or memory-bound (low). Key to GPU performance analysis.<br><span class="zh">算术强度 = FLOPs / 搬运字节数。决定操作是计算瓶颈还是显存瓶颈。GPU 性能分析的关键。</span></div>
+      <div><strong>Kernel Fusion</strong> — Combine multiple GPU operations into one kernel to avoid redundant HBM round-trips. FlashAttention fuses attention via tiling.<br><span class="zh">核融合——将多个 GPU 操作合并为一个核，避免冗余显存往返。FlashAttention 通过 tiling 融合注意力。</span></div>
+      <div><strong>Prefill vs Decode</strong> — Prefill processes all prompt tokens in parallel (compute-bound). Decode generates one token at a time (memory-bound). Different bottlenecks need different optimizations.<br><span class="zh">预填充 vs 解码——预填充并行处理所有 prompt（计算瓶颈）。解码逐 token 生成（显存瓶颈）。不同瓶颈需要不同优化。</span></div>
+    </div>
+  </div>
+
   <h2 id="notes">Notes</h2>
 
-  <h3 id="deliverables">Core Deliverables</h3>
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="s1">1. Core Deliverables</h3>
   <p class="zh">作业 1 需要从零实现以下内容（不使用框架现成组件）：</p>
   <ul>
     <li><strong>BPE tokenizer</strong> — efficient version with pre-tokenization (regex) and special tokens<span class="zh">（实现高效 BPE 分词器，含预分词和特殊 token 处理）</span></li>
@@ -68,13 +80,15 @@
     <li><strong>Resource accounting</strong> — compute FLOPs and memory usage<span class="zh">（资源核算：计算 FLOPs 和显存用量）</span></li>
   </ul>
 
-  <h3 id="datasets">Datasets</h3>
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="s2">2. Datasets</h3>
   <ul>
     <li><strong>TinyStories:</strong> small synthetic dataset of children's stories — fast to train on, good for debugging<span class="zh">（小型合成儿童故事数据集——训练快，适合调试）</span></li>
     <li><strong>OpenWebText:</strong> large-scale web text dataset — the real challenge<span class="zh">（大规模网络文本数据集——真正的挑战）</span></li>
   </ul>
 
-  <h3 id="leaderboard">Leaderboard</h3>
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="s3">3. Leaderboard</h3>
   <p>Minimize OpenWebText perplexity given <strong>45 minutes on a B200 GPU</strong>. This forces you to think about efficiency — you can't just scale up, you need smart architectural and training choices.</p>
   <p class="zh">在 B200 GPU 上 45 分钟内最小化 OpenWebText 困惑度。这迫使你思考效率——不能单纯靠堆算力，需要聪明的架构和训练决策。</p>
 
@@ -83,6 +97,177 @@
     <span class="zh">一切都在平衡<strong>表达力</strong>（建模复杂依赖）、<strong>稳定性</strong>（数值范围合理）、<strong>效率</strong>（硬件上跑得快）。</span>
   </blockquote>
 
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="s4">4. Resource Accounting</h3>
+  <p>Before optimizing anything, you need to <strong>measure</strong>. Resource accounting answers: how much compute and memory does my model need?</p>
+  <p class="zh">在优化任何东西之前，你需要<strong>度量</strong>。资源核算回答：我的模型需要多少计算量和显存？</p>
+
+  <h4 id="s4-1">4.1 Compute (FLOPs)</h4>
+  <p>Model parameters must be moved from memory (HBM) to the compute units (SMs). A simple rule of thumb for training:</p>
+  <p class="zh">模型参数必须从显存（HBM）搬到计算单元（SM）。训练的简单估算公式：</p>
+<pre><code>total_flops = 6 * N * D
+# N = number of parameters, D = number of training tokens
+# Example: 70B params × 1T tokens
+total_flops = 6 * 70e9 * 1e12 = 4.2e23 FLOPs</code></pre>
+  <p>Why 6? Forward pass ≈ $2ND$ FLOPs (each parameter does a multiply-add per token). Backward pass ≈ $4ND$ (roughly 2× forward). Total ≈ $6ND$.<br>
+  <span class="zh">为什么是 6？前向传播 ≈ $2ND$ FLOPs（每个参数对每个 token 做一次乘加）。反向传播 ≈ $4ND$（约为前向的 2 倍）。总计 ≈ $6ND$。</span></p>
+
+  <h4 id="s4-2">4.2 Memory</h4>
+  <p>GPU memory holds multiple things simultaneously:</p>
+  <p class="zh">GPU 显存需要同时存放多项内容：</p>
+  <ul>
+    <li><strong>Parameters:</strong> $N$ params × bytes per param (e.g., 2 bytes for bf16)<span class="zh">（参数：$N$ 个参数 × 每参数字节数）</span></li>
+    <li><strong>Gradients:</strong> same size as parameters<span class="zh">（梯度：与参数同样大小）</span></li>
+    <li><strong>Optimizer states:</strong> AdamW stores 2 extra copies (momentum + variance) → $2N$ more<span class="zh">（优化器状态：AdamW 额外存 2 份——动量+方差→多 $2N$）</span></li>
+    <li><strong>Activations:</strong> intermediate values saved for backward pass, scales with batch size × seq len<span class="zh">（激活值：为反向传播保存的中间值，随 batch size × 序列长度增长）</span></li>
+  </ul>
+
+  <h4 id="s4-3">4.3 Roofline Analysis</h4>
+  <p>Determines whether an operation is <em>compute-bound</em> or <em>memory-bound</em>:</p>
+  <p class="zh">判断操作的瓶颈是计算还是显存带宽：</p>
+  <blockquote>
+    Arithmetic intensity = FLOPs / bytes moved<br>
+    If intensity &gt; machine's compute-to-bandwidth ratio → <strong>compute-bound</strong> (good! GPU is fully utilized)<br>
+    If intensity &lt; ratio → <strong>memory-bound</strong> (GPU is waiting for data, compute units idle)<br>
+    <span class="zh">算术强度 = FLOPs / 搬运字节数。如果强度高于机器的计算带宽比→<strong>计算瓶颈</strong>（好！GPU 被充分利用）。如果低于→<strong>显存瓶颈</strong>（GPU 在等数据，计算单元闲置）。</span>
+  </blockquote>
+  <p>Example: <strong>B200 GPU</strong> — 2.25 PFLOP/s (bf16), 8 TB/s HBM bandwidth. Crossover point: $2.25 \times 10^{15} / 8 \times 10^{12} \approx 281$ FLOPs/byte. Operations above 281 are compute-bound; below are memory-bound.<br>
+  <span class="zh">B200 GPU：2.25 PFLOP/s bf16 算力，8 TB/s 显存带宽。临界点约 281 FLOPs/字节。高于此为计算瓶颈，低于此为显存瓶颈。</span></p>
+
+  <h4 id="s4-4">4.4 Benchmarking &amp; Profiling</h4>
+  <p>Theory is important, but always verify with profiling tools. <strong>Nsight Systems</strong> shows what actually happens on the GPU — kernel launch times, memory transfers, utilization gaps.</p>
+  <p class="zh">理论很重要，但一定要用分析工具验证。<strong>Nsight Systems</strong> 能显示 GPU 上实际发生的情况——核启动时间、内存传输、利用率空白。</p>
+
+  <div style="text-align:center;margin:24px 0;">
+    <img src="images/gpu-node-overview.png" alt="DGX B200 GPU Node Architecture" style="max-width:min(100%,640px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">DGX B200 node: 8 GPUs connected via NVSwitch, 2 CPUs, NVMe storage. GPUs within a node communicate fast (NVLink); between nodes is slower (network).<br><span class="zh">DGX B200 节点：8 张 GPU 通过 NVSwitch 互联，2 个 CPU，NVMe 存储。节点内 GPU 通信快（NVLink），节点间通信慢（网络）。</span></p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="s5">5. Kernels</h3>
+  <p>A <strong>kernel</strong> is a function that runs on the GPU. Understanding kernels is key to understanding GPU performance.</p>
+  <p class="zh"><strong>核函数</strong>是在 GPU 上运行的函数。理解核函数是理解 GPU 性能的关键。</p>
+
+  <blockquote>
+    <strong>Core principle:</strong> Moving data in memory is surprisingly expensive — often <em>more</em> expensive than the computation itself. The GPU can multiply numbers blazingly fast, but spends most of its time <em>waiting for data to arrive</em> from memory. The entire systems story is about one thing: <strong>how to minimize data movement</strong>.<br>
+    <span class="zh"><strong>核心原则：</strong>在内存中搬运数据非常昂贵——通常比计算本身<em>更</em>昂贵。GPU 能飞速做乘法，但大部分时间都在<em>等数据从显存送过来</em>。整个系统的故事都围绕一件事：<strong>如何最小化数据搬运</strong>。</span>
+  </blockquote>
+
+  <h4 id="s5-1">5.1 The Problem with Standard PyTorch</h4>
+  <p>When using PyTorch, each primitive operation (matmul, add, activation) launches a separate kernel. Between each kernel, intermediate results are written back to HBM and then read again — wasteful round-trips.</p>
+  <p class="zh">标准 PyTorch 的问题：每个基本操作（矩阵乘法、加法、激活函数）各自启动一个核。每个核之间，中间结果写回 HBM 然后又读出来——浪费的往返。</p>
+<pre><code># Naive: 3 separate kernels, 3 HBM round-trips
+read HBM → compute A → write HBM    # kernel 1
+read HBM → compute B → write HBM    # kernel 2
+read HBM → compute C → write HBM    # kernel 3
+
+# Fused: 1 kernel, 1 HBM round-trip
+read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
+
+  <h4 id="s5-2">5.2 Kernel Fusion Strategies</h4>
+  <p>Can write custom kernels to make GPUs go brrr:</p>
+  <p class="zh">编写自定义核函数让 GPU 飞起来：</p>
+  <ul>
+    <li><strong>Operator fusion:</strong> combine matmul + activation into one kernel (e.g., matmul + SwiGLU)<span class="zh">（算子融合：将矩阵乘法+激活函数合并为一个核）</span></li>
+    <li><strong>Tiling (FlashAttention):</strong> break the $n \times n$ attention matrix into small tiles that fit in SRAM, compute tile by tile without ever materializing the full matrix in HBM<span class="zh">（分块——FlashAttention：把注意力矩阵切成能放进 SRAM 的小块，逐块计算，从不在 HBM 中生成完整矩阵）</span></li>
+  </ul>
+
+  <h4 id="s5-3">5.3 Advanced GPU Concepts</h4>
+  <ul>
+    <li><strong>Warp divergence:</strong> threads in a warp take different branches → serialized execution<span class="zh">（warp 分歧：同一 warp 中的线程走不同分支→串行执行）</span></li>
+    <li><strong>Memory coalescing:</strong> adjacent threads should access adjacent memory addresses for efficient reads<span class="zh">（内存合并访问：相邻线程应访问相邻内存地址以提高读取效率）</span></li>
+    <li><strong>Bank conflicts:</strong> multiple threads accessing the same shared memory bank → serialized<span class="zh">（Bank 冲突：多个线程同时访问同一共享内存 bank→串行化）</span></li>
+    <li><strong>Occupancy:</strong> ratio of active warps to maximum possible — higher ≈ better latency hiding<span class="zh">（占用率：活跃 warp 占最大可能的比例——越高越能隐藏延迟）</span></li>
+    <li><strong>Bulk-async memory transfers:</strong> overlap data movement with computation<span class="zh">（批量异步内存传输：数据搬运和计算重叠执行）</span></li>
+  </ul>
+
+  <h4 id="s5-4">5.4 Kernel Languages</h4>
+  <p>Write kernels in:</p>
+  <ul>
+    <li><strong>CUDA</strong> — low-level, full control over the GPU<span class="zh">（底层、对 GPU 完全控制）</span></li>
+    <li><strong>Triton</strong> — Python-like, used in Assignment 2 for fused RMSNorm<span class="zh">（类 Python 语法，A2 用来写融合 RMSNorm）</span></li>
+    <li><strong>CUTLASS</strong> — NVIDIA's template library for high-performance matrix operations<span class="zh">（NVIDIA 的高性能矩阵运算模板库）</span></li>
+    <li><strong>ThunderKittens</strong> — research framework for rapid kernel prototyping<span class="zh">（快速核函数原型开发的研究框架）</span></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="s6">6. Parallelism</h3>
+  <p>What if you have 1024 GPUs? Data movement between GPUs is even slower than within a GPU, but the same <strong>"minimize data movement"</strong> principle holds.</p>
+  <p class="zh">如果你有 1024 张 GPU 呢？GPU 之间的数据搬运比 GPU 内部更慢，但同样的<strong>「最小化数据搬运」</strong>原则依然适用。</p>
+
+  <h4 id="s6-1">6.1 Collective Operations</h4>
+  <p>Classic collective operations are the building blocks of multi-GPU communication:</p>
+  <p class="zh">经典集体通信操作是多 GPU 通信的基础组件：</p>
+  <ul>
+    <li><strong>All-reduce:</strong> every GPU sends its data, all GPUs receive the sum — used for gradient synchronization in data parallelism<span class="zh">（All-reduce：每个 GPU 发送数据，所有 GPU 收到总和——用于数据并行中的梯度同步）</span></li>
+    <li><strong>All-gather:</strong> every GPU sends its shard, all GPUs receive the full tensor<span class="zh">（All-gather：每个 GPU 发送自己的分片，所有 GPU 收到完整张量）</span></li>
+    <li><strong>Reduce-scatter:</strong> reduce + scatter result across GPUs<span class="zh">（Reduce-scatter：归约后将结果分散到各 GPU）</span></li>
+  </ul>
+
+  <h4 id="s6-2">6.2 What to Shard</h4>
+  <p>Shard memory across GPUs: parameters, activations, gradients, optimizer states — each can be distributed independently.</p>
+  <p class="zh">在 GPU 间分片的内容：参数、激活值、梯度、优化器状态——每个都可以独立分布。</p>
+
+  <h4 id="s6-3">6.3 Types of Parallelism</h4>
+  <table>
+    <tr><th>Type</th><th>What's Distributed</th><th>When to Use</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Data parallelism</strong> (DDP)</td><td>Data batches; all-reduce gradients</td><td>Always — simplest starting point</td><td class="zh">数据并行：最简单的起点</td></tr>
+    <tr><td><strong>Tensor parallelism</strong></td><td>Split weight matrices across GPUs</td><td>Within a node (needs fast interconnect)</td><td class="zh">张量并行：节点内，需快速互联</td></tr>
+    <tr><td><strong>Pipeline parallelism</strong></td><td>Different layers on different GPUs</td><td>Across nodes (less communication)</td><td class="zh">流水线并行：跨节点，通信少</td></tr>
+    <tr><td><strong>Sequence parallelism</strong></td><td>Split long sequences across GPUs</td><td>Very long context windows</td><td class="zh">序列并行：超长上下文</td></tr>
+    <tr><td><strong>Expert parallelism</strong></td><td>Different MoE experts on different GPUs</td><td>MoE models only</td><td class="zh">专家并行：MoE 专用</td></tr>
+  </table>
+
+  <blockquote>
+    The unifying principle across kernels and parallelism: <strong>minimize data movement</strong>. Within a GPU: minimize HBM ↔ SM transfers. Across GPUs: minimize inter-GPU communication. Across nodes: minimize network traffic.<br>
+    <span class="zh">核函数和并行化的统一原则：<strong>最小化数据搬运</strong>。GPU 内部：减少 HBM ↔ SM 传输。GPU 之间：减少 GPU 间通信。节点之间：减少网络流量。</span>
+  </blockquote>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3 id="s7">7. Inference</h3>
+  <p><strong>Goal:</strong> generate tokens given a prompt. This is needed not just for serving users, but also for <strong>reinforcement learning</strong> (generate rollouts), <strong>test-time compute</strong> (chain-of-thought reasoning), and <strong>evaluation</strong> (benchmarks).</p>
+  <p class="zh"><strong>目标：</strong>根据 prompt 生成 token。不仅用于服务用户，还用于<strong>强化学习</strong>（生成 rollout）、<strong>测试时计算</strong>（思维链推理）和<strong>评估</strong>（基准测试）。</p>
+
+  <h4 id="s7-1">7.1 Two Phases: Prefill &amp; Decode</h4>
+  <p>Inference has two phases with fundamentally different characteristics:</p>
+  <p class="zh">推理有两个阶段，特性截然不同：</p>
+
+  <div style="text-align:center;margin:24px 0;">
+    <img src="images/prefill-decode.png" alt="Prefill and Decode Phases" style="max-width:min(100%,600px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Prefill processes all prompt tokens at once; Decode generates tokens one by one, using KV-Cache to avoid recomputation.<br><span class="zh">预填充一次处理所有 prompt token；解码逐个生成 token，用 KV-Cache 避免重复计算。</span></p>
+  </div>
+
+  <table>
+    <tr><th>Phase</th><th>What Happens</th><th>Bottleneck</th><th>Why</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Prefill</strong></td><td>Process all prompt tokens in parallel</td><td>Compute-bound</td><td>Large matrix multiplications, like training</td><td class="zh">预填充：并行处理 prompt，像训练一样做大矩阵乘法</td></tr>
+    <tr><td><strong>Decode</strong></td><td>Generate one token at a time</td><td>Memory-bound</td><td>Must load entire model weights for each single token</td><td class="zh">解码：逐 token 生成，每个 token 都要加载全部模型权重</td></tr>
+  </table>
+
+  <h4 id="s7-2">7.2 Speeding Up Decoding</h4>
+
+  <p><strong>Use a cheaper model:</strong></p>
+  <p class="zh">用更便宜的模型：</p>
+  <ul>
+    <li><strong>Model pruning:</strong> remove less important weights/neurons<span class="zh">（模型剪枝：移除不重要的权重/神经元）</span></li>
+    <li><strong>Quantization:</strong> reduce precision (FP16 → INT8 → INT4) — fewer bytes to load per parameter<span class="zh">（量化：降低精度——每个参数需要加载的字节数更少）</span></li>
+    <li><strong>Distillation:</strong> train a smaller model to mimic the larger one<span class="zh">（蒸馏：训练一个小模型来模仿大模型）</span></li>
+  </ul>
+
+  <p><strong>Speculative decoding (exact!):</strong></p>
+  <p class="zh">投机解码（数学上精确！）：</p>
+  <blockquote>
+    Use a cheap "draft" model to quickly generate multiple candidate tokens. Then use the full model to <strong>score all candidates in parallel</strong> (like prefill — compute-bound, fast!). Accept tokens that the full model agrees with. This is <strong>mathematically exact</strong> — produces the same distribution as the full model, just faster.<br>
+    <span class="zh">用一个便宜的「草稿」模型快速生成多个候选 token。然后用完整模型<strong>并行打分所有候选</strong>（像预填充一样——计算瓶颈，快！）。接受完整模型同意的 token。这是<strong>数学上精确的</strong>——产生与完整模型完全相同的分布，只是更快。</span>
+  </blockquote>
+
+  <h4 id="s7-3">7.3 Systems Optimizations</h4>
+  <ul>
+    <li><strong>KV cache:</strong> store computed Key/Value pairs from previous tokens — avoids recomputing attention for the entire history at each step<span class="zh">（KV 缓存：存储之前 token 计算过的 Key/Value 对——避免每步重新计算整个历史的注意力）</span></li>
+    <li><strong>Fused kernels:</strong> same principle as training — minimize HBM round-trips<span class="zh">（融合核函数：与训练相同的原则——减少 HBM 往返）</span></li>
+    <li><strong>Continuous batching:</strong> dynamically add/remove requests from a batch as they finish, maximizing GPU utilization<span class="zh">（连续批处理：请求完成后动态添加/移除，最大化 GPU 利用率）</span></li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
   <h3 id="my-notes">My Notes &amp; Questions</h3>
   <!-- Add your personal notes, debugging insights, and questions here -->
 
