@@ -20,38 +20,241 @@
   <div class="tldr">
     <h3>TL;DR</h3>
     <ul>
-      <li><!-- Add key takeaways here --></li>
+      <li>Language models need a tokenizer to convert raw text (bytes) into integer sequences — the choice of tokenizer profoundly affects model efficiency.</li>
+      <li>There's a fundamental trade-off: <strong>vocabulary size</strong> (smaller = less sparse) vs <strong>compression ratio</strong> (higher = shorter sequences for Transformer).</li>
+      <li>BPE (Byte Pair Encoding) is the dominant tokenization method — it's data-driven, starts from bytes, and iteratively merges the most frequent adjacent pair.</li>
+      <li>Course philosophy: <strong>understanding via building</strong>. accuracy = efficiency × resources. Algorithms that <em>scale</em> are what matter.</li>
     </ul>
   </div>
 
   <h2>Key Concepts</h2>
   <div class="concepts">
-    <!-- Add key concept cards here, e.g.:
-    <div><strong>Concept Name</strong> — Brief description</div>
-    -->
+    <div><strong>Tokenizer</strong> — Converts between raw strings and integer sequences (tokens). Must implement <code>encode(str→list[int])</code> and <code>decode(list[int]→str)</code>.</div>
+    <div><strong>Compression Ratio</strong> — bytes / tokens. Higher is better: means shorter sequences for the Transformer. BPE achieves ~4x compression on English text.</div>
+    <div><strong>BPE Training</strong> — Start with bytes (vocab=256). Repeat: count adjacent pairs → merge most frequent → add merged token to vocab. Each merge increases compression.</div>
+    <div><strong>BPE Encoding</strong> — Given a string, convert to bytes, then apply learned merge rules in training order. Greedy left-to-right, rank-based resolution for overlaps.</div>
+    <div><strong>Pre-tokenization</strong> — Split text on word boundaries (regex) before BPE to prevent cross-word merges. GPT-2 uses a regex that isolates words, numbers, punctuation.</div>
+    <div><strong>Vocabulary Size</strong> — GPT-2: 50,257 tokens. GPT-4/5 (o200k): 200,019 tokens. Larger vocab = higher compression but sparser embeddings.</div>
+    <div><strong>The Bitter Lesson</strong> — Not "scale is all that matters" but "algorithms that scale are what matter." Efficiency is more important at larger scales.</div>
+    <div><strong>Three Types of Knowledge</strong> — Mechanics (how things work), Mindset (squeeze hardware), Intuitions (which decisions yield good accuracy). CS336 teaches the first two.</div>
   </div>
 
   <h2>Notes</h2>
-  <!-- Add detailed notes here. Suggested structure:
 
-  <h3>Section Title</h3>
-  <p>Your notes...</p>
+  <!-- ══════════════════════════════════════════════ -->
+  <h3>Part 1: Why This Course Exists</h3>
 
-  <h4>Subsection</h4>
-  <p>More details...</p>
+  <h4>The Disconnection Problem</h4>
+  <p>Researchers are becoming increasingly disconnected from underlying technology:</p>
+  <ul>
+    <li><strong>2016:</strong> Researchers implemented and trained their own models</li>
+    <li><strong>2018:</strong> Researchers downloaded models (e.g., BERT) and fine-tuned them</li>
+    <li><strong>Today:</strong> Researchers prompt API models (GPT/Claude/Gemini)</li>
+  </ul>
+  <p>Moving up levels of abstraction boosts productivity, but these abstractions are <em>leaky</em> (unlike programming languages or OSes). Full understanding is necessary for fundamental research.</p>
 
-  <blockquote>Important insight or quote from lecture</blockquote>
+  <h4>The Industrialization of LMs</h4>
+  <ul>
+    <li>GPT-4 reportedly cost ~$100M to train (2023)</li>
+    <li>xAI built a cluster with 230K GPUs for Grok (2025)</li>
+    <li>Frontier model internals are secret — GPT-4 technical report says essentially nothing about architecture</li>
+  </ul>
 
-  <pre><code>Code examples here</code></pre>
+  <blockquote>
+    accuracy = efficiency × resources<br>
+    Efficiency is <em>way more important</em> at larger scales — you can't afford to be wasteful. 44x algorithmic efficiency gain on ImageNet between 2012 and 2019.
+  </blockquote>
 
-  For math: $inline$ or $$display$$
+  <h4>What Can We Learn That Transfers?</h4>
+  <table>
+    <tr><th>Knowledge Type</th><th>Transfers?</th><th>Examples</th></tr>
+    <tr><td><strong>Mechanics</strong></td><td>Yes</td><td>What a Transformer is, how model parallelism works</td></tr>
+    <tr><td><strong>Mindset</strong></td><td>Yes</td><td>Squeezing the most out of hardware, taking scaling seriously</td></tr>
+    <tr><td><strong>Intuitions</strong></td><td>Partially</td><td>Which data/modeling decisions yield good accuracy (may not transfer across scales)</td></tr>
+  </table>
 
-  For images:
-  <figure class="slide">
-    <img src="figs/lecXX/image.jpg">
-    <figcaption><span class="ft">[00:15:30]</span> Description</figcaption>
-  </figure>
-  -->
+  <!-- ══════════════════════════════════════════════ -->
+  <h3>Part 2: LM History & Landscape</h3>
+
+  <h4>Timeline</h4>
+  <ul>
+    <li><strong>Pre-neural:</strong> Shannon (entropy of English), n-gram LMs for MT and ASR</li>
+    <li><strong>Neural ingredients (2010s):</strong> LSTM → first neural LM (Bengio 2003) → seq2seq → attention → Transformer (2017) → MoE</li>
+    <li><strong>Early foundation models:</strong> ELMo (LSTM pretrain) → BERT (Transformer pretrain + fine-tune) → T5 (text-to-text)</li>
+    <li><strong>Scaling era:</strong> GPT-2 (1.5B, zero-shot) → scaling laws (Kaplan) → GPT-3 (175B, in-context learning) → PaLM (540B) → Chinchilla (70B, compute-optimal)</li>
+  </ul>
+
+  <h4>Open Models Landscape</h4>
+  <p><strong>Open-weight</strong> (weights + paper): LLaMA, Mistral/Mixtral, DeepSeek, Qwen, Kimi, GLM — approaching closed model quality.</p>
+  <p><strong>Open-source</strong> (weights + paper + code + data): OLMo (AI2), Nemotron (NVIDIA), Marin — full transparency for research.</p>
+
+  <h4>Evolution of "Language Model"</h4>
+  <ul>
+    <li>2018 (BERT): something you <strong>fine-tune</strong></li>
+    <li>2020 (GPT-3): something you <strong>prompt</strong></li>
+    <li>2022 (ChatGPT): something you <strong>talk to</strong></li>
+    <li>2026 (agents): something that <strong>acts autonomously</strong></li>
+  </ul>
+  <p>The fundamentals are the same (attention, kernels, optimization). The specs change (longer context, inference efficiency).</p>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3>Part 3: Course Syllabus Overview</h3>
+
+  <table>
+    <tr><th>Module</th><th>Assignment</th><th>Key Topics</th></tr>
+    <tr><td><strong>Basics</strong></td><td>A1</td><td>BPE tokenizer, Transformer, AdamW, training loop</td></tr>
+    <tr><td><strong>Systems</strong></td><td>A2</td><td>Triton kernels (fused RMSNorm), DDP, optimizer sharding</td></tr>
+    <tr><td><strong>Scaling</strong></td><td>A3</td><td>Scaling laws, IsoFLOP, hyperparameter extrapolation</td></tr>
+    <tr><td><strong>Data</strong></td><td>A4</td><td>HTML→text, quality filtering, MinHash dedup, data mixing</td></tr>
+    <tr><td><strong>Alignment</strong></td><td>A5</td><td>DPO, GRPO</td></tr>
+  </table>
+
+  <blockquote>
+    High-level principle: everything is about balancing <strong>expressivity</strong> (represent complex dependencies), <strong>stability</strong> (keep norms in goldilocks zone), and <strong>efficiency</strong> (runs fast on hardware).
+  </blockquote>
+
+  <p>Everything is about efficiency — we are compute-constrained today:</p>
+  <ul>
+    <li>Systems: clearly about efficiency</li>
+    <li>Tokenization: raw bytes would be elegant but compute-inefficient with current architectures</li>
+    <li>Architecture: many changes motivated by reducing memory/FLOPs (GQA, sliding window attention)</li>
+    <li>Data filtering: avoid wasting compute on bad/irrelevant data</li>
+    <li>Scaling laws: use smaller models to find good hyperparameters cheaply</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3>Part 4: Tokenization</h3>
+
+  <p>Inspired by <a href="https://www.youtube.com/watch?v=zduSFxRajkE" target="_blank">Andrej Karpathy's tokenization video ↗</a>. Play with tokenization interactively: <a href="https://tiktokenizer.vercel.app/?encoder=gpt2" target="_blank">tiktokenizer ↗</a></p>
+
+  <h4>The Problem</h4>
+  <p>A language model operates on <strong>sequences of integers</strong> (tokens), but raw input is a <strong>Unicode string</strong> (bytes). We need <code>encode(str → list[int])</code> and <code>decode(list[int] → str)</code> that round-trip correctly.</p>
+
+  <h4>Approach 1: Character Tokenizer</h4>
+  <p>Map each Unicode character to its code point via <code>ord()</code>.</p>
+<pre><code>class CharacterTokenizer(Tokenizer):
+    def encode(self, string):
+        return list(map(ord, string))  # ord("a")=97, ord("🌍")=127757
+    def decode(self, indices):
+        return "".join(map(chr, indices))</code></pre>
+  <ul>
+    <li><strong>Vocab size:</strong> ~150K Unicode characters — huge and sparse</li>
+    <li><strong>Compression:</strong> ~1 byte/token — poor</li>
+    <li>Worst of both worlds: large vocabulary AND low compression</li>
+  </ul>
+
+  <h4>Approach 2: Byte Tokenizer</h4>
+  <p>Encode string as UTF-8 bytes. Each byte is a token (0-255).</p>
+<pre><code>class ByteTokenizer(Tokenizer):
+    def encode(self, string):
+        return list(map(int, string.encode("utf-8")))
+    def decode(self, indices):
+        return bytes(indices).decode("utf-8")</code></pre>
+  <ul>
+    <li><strong>Vocab size:</strong> 256 — nice and small</li>
+    <li><strong>Compression:</strong> exactly 1.0 — terrible (sequences are too long for Transformer's quadratic attention)</li>
+    <li>Multi-byte characters: <code>"a"</code> = 1 byte, <code>"🌍"</code> = 4 bytes, <code>"你"</code> = 3 bytes</li>
+  </ul>
+
+  <h4>Approach 3: Word Tokenizer</h4>
+  <p>Split on whitespace/punctuation using regex like <code>\w+|.</code></p>
+  <ul>
+    <li><strong>Compression:</strong> good (each token is a whole word)</li>
+    <li><strong>Vocab size:</strong> unbounded — depends on data</li>
+    <li>Problems: rare words waste vocab slots, OOV (unseen words → UNK token), no fixed vocab size</li>
+  </ul>
+
+  <h4>Approach 4: Byte Pair Encoding (BPE) ★</h4>
+  <p>Originally a data compression algorithm (Gage, 1994). Adapted to NLP by Sennrich et al. (2016), then used by GPT-2.</p>
+  <p>Core idea: <strong>train</strong> the tokenizer on data to build a vocabulary tailored to the corpus. Common byte sequences → single tokens. Rare sequences → many tokens.</p>
+
+  <h4>BPE Training Algorithm</h4>
+<pre><code>def train_bpe(string, num_merges):
+    indices = list(string.encode("utf-8"))  # Start with raw bytes
+    merges = {}
+    vocab = {x: bytes([x]) for x in range(256)}  # Initial vocab: 256 bytes
+
+    for i in range(num_merges):
+        counts = count_adjacent_pairs(indices)  # Step 1: count pairs
+        pair = max(counts, key=counts.get)       # Step 2: find most frequent
+        new_index = 256 + i                      # Step 3: assign new token ID
+        merges[pair] = new_index
+        vocab[new_index] = vocab[pair[0]] + vocab[pair[1]]
+        indices = merge(indices, pair, new_index) # Step 4: replace all occurrences
+
+    return BPETokenizerParams(vocab=vocab, merges=merges)</code></pre>
+
+  <h4>BPE Training Example</h4>
+  <p>Training on <code>"the cat in the hat"</code> with 3 merges:</p>
+  <table>
+    <tr><th>Step</th><th>Most Frequent Pair</th><th>New Token</th><th>Result</th></tr>
+    <tr><td>Init</td><td>—</td><td>—</td><td><code>[116, 104, 101, 32, 99, 97, 116, ...]</code> (raw bytes)</td></tr>
+    <tr><td>1</td><td><code>(116, 104)</code> = "th"</td><td>256</td><td><code>[256, 101, 32, 99, 97, 116, ...]</code></td></tr>
+    <tr><td>2</td><td>next most frequent pair</td><td>257</td><td>merged sequence</td></tr>
+    <tr><td>3</td><td>next most frequent pair</td><td>258</td><td>merged sequence</td></tr>
+  </table>
+  <p>Each merge step: vocab size +1, compression ratio increases.</p>
+
+  <h4>BPE Encoding (Using the Trained Tokenizer)</h4>
+<pre><code>class BPETokenizer(Tokenizer):
+    def encode(self, string):
+        indices = list(string.encode("utf-8"))
+        for pair, new_index in self.params.merges.items():
+            indices = merge(indices, pair, new_index)
+        return indices
+
+    def decode(self, indices):
+        return b"".join(self.params.vocab[i] for i in indices).decode("utf-8")</code></pre>
+  <p>Note: this naive implementation loops over <em>all</em> merges for every string. Assignment 1 requires an efficient version.</p>
+
+  <h4>The <code>merge()</code> Helper</h4>
+<pre><code>def merge(indices, pair, new_index):
+    new_indices = []
+    i = 0
+    while i < len(indices):
+        if i+1 < len(indices) and indices[i]==pair[0] and indices[i+1]==pair[1]:
+            new_indices.append(new_index)
+            i += 2  # Skip both elements of the pair
+        else:
+            new_indices.append(indices[i])
+            i += 1
+    return new_indices</code></pre>
+
+  <h4>Key Observations from Tokenizer Playground</h4>
+  <ul>
+    <li>A word and its preceding space are often the same token: <code>" world"</code> ≠ <code>"world"</code></li>
+    <li>Same word at start vs middle of sentence → different tokens</li>
+    <li>Numbers get split every few digits</li>
+    <li>GPT-5 (o200k) vocab size: 200,019 tokens</li>
+  </ul>
+
+  <h4>Tokenization Summary</h4>
+  <table>
+    <tr><th>Method</th><th>Vocab Size</th><th>Compression</th><th>Verdict</th></tr>
+    <tr><td>Character</td><td>~150K</td><td>~1</td><td>Large vocab + low compression = worst of both worlds</td></tr>
+    <tr><td>Byte</td><td>256</td><td>1.0</td><td>Small vocab but sequences too long</td></tr>
+    <tr><td>Word</td><td>Unbounded</td><td>High</td><td>Good compression but OOV problem</td></tr>
+    <tr><td><strong>BPE</strong></td><td>Controllable</td><td>~4x</td><td>Best balance — data-driven, no OOV</td></tr>
+  </table>
+
+  <blockquote>
+    The dream: tokenizer-free architectures that operate directly on bytes (ByT5, MegaByte, BLT). Promising but not yet scaled to the frontier. Whatever solution needs: (1) model operates on chunks/abstractions of the sequence, (2) chunks should be variable-length (allocate more capacity to interesting parts).
+  </blockquote>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3>Assignment 1 Preview</h3>
+  <p>GitHub: <a href="https://github.com/stanford-cs336/assignment1-basics" target="_blank">assignment1-basics ↗</a></p>
+  <ul>
+    <li>Implement BPE tokenizer (efficient version with pre-tokenization and special tokens)</li>
+    <li>Implement Transformer, cross-entropy loss, AdamW optimizer, training loop</li>
+    <li>Resource accounting (FLOPs, memory)</li>
+    <li>Train on TinyStories and OpenWebText</li>
+    <li>Leaderboard: minimize OpenWebText perplexity given 45 minutes on a B200</li>
+  </ul>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <h3>My Notes & Questions</h3>
+  <!-- Add your personal notes, questions, and insights here as you study -->
 
   <div class="pager"><span></span><a href="lec02.html" style="text-align:right"><span class="dir">Next</span><span class="title">PyTorch & Resource Accounting</span></a></div>
 </main>
