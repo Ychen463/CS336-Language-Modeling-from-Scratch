@@ -271,16 +271,39 @@
   <p><strong>Architecture dimensions:</strong> hidden dim ($d_{\text{model}}$), depth (num layers), num attention heads, num experts (if MoE).</p>
   <p class="zh">架构维度：隐藏维度、层数、注意力头数、专家数（MoE 时）。</p>
 
-  <p><strong>Training components:</strong></p>
-  <p class="zh">训练组件：</p>
+  <p><strong>Training: How do you set the parameters of the model?</strong></p>
+  <p class="zh"><strong>训练：如何设定模型的参数？</strong>模型架构定义了「能学什么」，训练则决定「怎么学」。以下每个组件都是关键的设计选择：</p>
+
+  <p><strong>Loss function</strong> — Standard: predict the next token (cross-entropy). Newer: <strong>multi-token prediction (MTP)</strong> — predict multiple future tokens at once, providing a richer learning signal. Used by DeepSeek-V3.<br>
+  <span class="zh">损失函数——标准做法：预测下一个 token（交叉熵）。更新的做法：<strong>多 token 预测</strong>——同时预测多个未来 token，提供更丰富的学习信号。DeepSeek-V3 采用。</span></p>
+
+  <p><strong>Optimizer</strong> — How gradients update weights. <strong>Adam</strong> (2014) tracks per-parameter moving averages of gradient and squared gradient. <strong>AdamW</strong> (2017) decouples weight decay from gradient updates — the standard for LLM training. Newer: <strong>SOAP</strong> and <strong>Muon</strong> (2024) explore second-order-like methods for faster convergence.<br>
+  <span class="zh">优化器——梯度如何更新权重。Adam（2014）维护每个参数的梯度均值和平方梯度均值的滑动平均。AdamW（2017）将权重衰减与梯度更新解耦——LLM 训练的标准选择。更新的 SOAP 和 Muon（2024）探索类二阶方法以加速收敛。</span></p>
+
+  <p><strong>Initialization scale</strong> — Weights can't start at zero (symmetry breaking), nor too large/small (gradient explosion/vanishing). <strong>Xavier init</strong> (2010) scales weights by $1/\sqrt{d}$ to keep activations stable across layers. <strong>muP</strong> (maximal update parametrization, 2022) goes further: ensures hyperparameters (like learning rate) transfer across model scales — train a small model, use the same hyperparams for a large one.<br>
+  <span class="zh">初始化尺度——权重不能从零开始（对称性破缺），也不能太大/太小（梯度爆炸/消失）。Xavier 初始化（2010）按 $1/\sqrt{d}$ 缩放权重以保持激活值跨层稳定。muP（最大更新参数化，2022）更进一步：确保超参数（如学习率）能跨模型规模迁移——在小模型上训练，大模型直接用相同超参。</span></p>
+
+  <p><strong>Learning rate schedule</strong> — Learning rate isn't constant during training. <strong>Cosine annealing</strong> (2016): starts high, smoothly decays following a cosine curve. <strong>WSD</strong> (warmup-stable-decay, 2024): linear warmup → constant → rapid decay — simpler and increasingly popular.<br>
+  <span class="zh">学习率调度——训练过程中学习率不是恒定的。余弦退火（2016）：从高开始，按余弦曲线平滑衰减。WSD（2024）：线性预热→恒定→快速衰减——更简单，越来越流行。</span></p>
+
+  <p><strong>Regularization</strong> — Prevent overfitting. <strong>Dropout</strong>: randomly zero out activations during training. <strong>Weight decay</strong>: penalize large weights by shrinking them slightly each step (pushes model toward simpler solutions).<br>
+  <span class="zh">正则化——防止过拟合。Dropout：训练时随机将激活值置零。权重衰减：每步稍微缩小权重（推动模型走向更简单的解）。</span></p>
+
+  <p><strong>Batch size</strong> — How many examples per gradient update. Too small = noisy gradients, slow convergence. Too large = diminishing returns (each additional sample adds less new information). The <strong>critical batch size</strong> (2018) marks the transition: below it, larger batches speed up training linearly; above it, the benefit saturates.<br>
+  <span class="zh">批大小——每次梯度更新用多少样本。太小→梯度噪声大、收敛慢。太大→边际收益递减（每个额外样本贡献的新信息越来越少）。临界批大小（2018）标志着转折点：低于它，增大批量能线性加速训练；高于它，收益饱和。</span></p>
+
+  <p><strong>MoE-specific: load balancing</strong> — In Mixture of Experts models, a router sends tokens to different experts. If all tokens go to the same expert, the others waste compute. Load balancing losses (or <strong>aux-free routing</strong>) encourage even distribution across experts.<br>
+  <span class="zh">MoE 专用：负载均衡——在专家混合模型中，路由器将 token 分配给不同专家。如果所有 token 都去同一个专家，其他专家就浪费算力了。负载均衡损失（或无辅助损失路由）鼓励在专家间均匀分配。</span></p>
+
   <table>
-    <tr><th>Component</th><th>Options</th><th class="zh">中文说明</th></tr>
-    <tr><td><strong>Loss</strong></td><td>Next-token prediction, multi-token prediction (MTP)</td><td class="zh">损失函数：下一 token 预测、多 token 预测</td></tr>
-    <tr><td><strong>Optimizer</strong></td><td>Adam (2014) → AdamW (2017) → SOAP, Muon (2024)</td><td class="zh">优化器：从 Adam 到 AdamW 再到 SOAP、Muon</td></tr>
-    <tr><td><strong>Initialization</strong></td><td>Xavier, muP (maximal update parametrization)</td><td class="zh">初始化：Xavier、muP（跨规模迁移超参数）</td></tr>
-    <tr><td><strong>LR schedule</strong></td><td>Cosine annealing, WSD (warmup-stable-decay)</td><td class="zh">学习率调度：余弦退火、WSD</td></tr>
-    <tr><td><strong>Regularization</strong></td><td>Dropout, weight decay</td><td class="zh">正则化：Dropout、权重衰减</td></tr>
-    <tr><td><strong>Batch size</strong></td><td>Critical batch size concept, large-batch training</td><td class="zh">批大小：临界批大小、大批量训练</td></tr>
+    <tr><th>Component</th><th>Options</th><th>Key References</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Loss</strong></td><td>Next-token prediction, MTP</td><td>Gloeckle+ 2024, DeepSeek 2024</td><td class="zh">损失函数</td></tr>
+    <tr><td><strong>Optimizer</strong></td><td>Adam → AdamW → SOAP, Muon</td><td>Kingma+ 2014, Loshchilov+ 2017, Vyas+ 2024, Keller 2024</td><td class="zh">优化器</td></tr>
+    <tr><td><strong>Initialization</strong></td><td>Xavier, muP</td><td>Glorot+ 2010, Yang+ 2022</td><td class="zh">初始化</td></tr>
+    <tr><td><strong>LR schedule</strong></td><td>Cosine, WSD</td><td>Loshchilov+ 2016, Hu+ 2024</td><td class="zh">学习率调度</td></tr>
+    <tr><td><strong>Regularization</strong></td><td>Dropout, weight decay</td><td></td><td class="zh">正则化</td></tr>
+    <tr><td><strong>Batch size</strong></td><td>Critical batch size</td><td>McCandlish+ 2018</td><td class="zh">批大小</td></tr>
+    <tr><td><strong>MoE routing</strong></td><td>Load balancing, aux-free</td><td>Wang+ 2024, DeepSeek 2024</td><td class="zh">MoE 负载均衡</td></tr>
   </table>
 
   <h4 id="unit2-preview">Unit 2: Systems — Hardware &amp; Parallelism Preview</h4>
