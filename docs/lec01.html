@@ -20,23 +20,23 @@
   <div class="tldr">
     <h3>TL;DR</h3>
     <ul>
-      <li>Language models need a tokenizer to convert raw text (bytes) into integer sequences — the choice of tokenizer profoundly affects model efficiency.</li>
-      <li>There's a fundamental trade-off: <strong>vocabulary size</strong> (smaller = less sparse) vs <strong>compression ratio</strong> (higher = shorter sequences for Transformer).</li>
-      <li>BPE (Byte Pair Encoding) is the dominant tokenization method — it's data-driven, starts from bytes, and iteratively merges the most frequent adjacent pair.</li>
-      <li>Course philosophy: <strong>understanding via building</strong>. accuracy = efficiency × resources. Algorithms that <em>scale</em> are what matter.</li>
+      <li>Language models need a tokenizer to convert raw text (bytes) into integer sequences — the choice of tokenizer profoundly affects model efficiency.<br><span class="zh">语言模型需要分词器将原始文本（字节）转换为整数序列——分词器的选择深刻影响模型效率。</span></li>
+      <li>There's a fundamental trade-off: <strong>vocabulary size</strong> (smaller = less sparse) vs <strong>compression ratio</strong> (higher = shorter sequences for Transformer).<br><span class="zh">核心权衡：词表大小（越小越不稀疏）vs 压缩率（越高序列越短，Transformer 处理越快）。</span></li>
+      <li>BPE (Byte Pair Encoding) is the dominant tokenization method — it's data-driven, starts from bytes, and iteratively merges the most frequent adjacent pair.<br><span class="zh">BPE（字节对编码）是主流分词方法——数据驱动，从字节开始，反复合并出现频率最高的相邻对。</span></li>
+      <li>Course philosophy: <strong>understanding via building</strong>. accuracy = efficiency × resources. Algorithms that <em>scale</em> are what matter.<br><span class="zh">课程理念：通过构建来理解。准确率 = 效率 × 资源。能 scale 的算法才重要。</span></li>
     </ul>
   </div>
 
   <h2>Key Concepts</h2>
   <div class="concepts">
-    <div><strong>Tokenizer</strong> — Converts between raw strings and integer sequences (tokens). Must implement <code>encode(str→list[int])</code> and <code>decode(list[int]→str)</code>.</div>
-    <div><strong>Compression Ratio</strong> — bytes / tokens. Higher is better: means shorter sequences for the Transformer. BPE achieves ~4x compression on English text.</div>
-    <div><strong>BPE Training</strong> — Start with bytes (vocab=256). Repeat: count adjacent pairs → merge most frequent → add merged token to vocab. Each merge increases compression.</div>
-    <div><strong>BPE Encoding</strong> — Given a string, convert to bytes, then apply learned merge rules in training order. Greedy left-to-right, rank-based resolution for overlaps.</div>
-    <div><strong>Pre-tokenization</strong> — Split text on word boundaries (regex) before BPE to prevent cross-word merges. GPT-2 uses a regex that isolates words, numbers, punctuation.</div>
-    <div><strong>Vocabulary Size</strong> — GPT-2: 50,257 tokens. GPT-4/5 (o200k): 200,019 tokens. Larger vocab = higher compression but sparser embeddings.</div>
-    <div><strong>The Bitter Lesson</strong> — Not "scale is all that matters" but "algorithms that scale are what matter." Efficiency is more important at larger scales.</div>
-    <div><strong>Three Types of Knowledge</strong> — Mechanics (how things work), Mindset (squeeze hardware), Intuitions (which decisions yield good accuracy). CS336 teaches the first two.</div>
+    <div><strong>Tokenizer</strong> — Converts between raw strings and integer sequences (tokens). Must implement <code>encode(str→list[int])</code> and <code>decode(list[int]→str)</code>.<br><span class="zh">分词器：在原始字符串和整数序列之间转换。必须实现 encode 和 decode 且能完美还原。</span></div>
+    <div><strong>Compression Ratio</strong> — bytes / tokens. Higher is better: means shorter sequences for the Transformer. BPE achieves ~4x compression on English text.<br><span class="zh">压缩率 = 字节数 / token 数。越高越好，意味着 Transformer 处理的序列越短。BPE 在英文上约 4 倍压缩。</span></div>
+    <div><strong>BPE Training</strong> — Start with bytes (vocab=256). Repeat: count adjacent pairs → merge most frequent → add merged token to vocab. Each merge increases compression.<br><span class="zh">BPE 训练：从 256 个字节开始，反复统计相邻对频率→合并最高频对→加入词表。每次合并提升压缩率。</span></div>
+    <div><strong>BPE Encoding</strong> — Given a string, convert to bytes, then apply learned merge rules in training order. Greedy left-to-right, rank-based resolution for overlaps.<br><span class="zh">BPE 编码：将字符串转为字节，按训练时的顺序逐一应用合并规则。重叠时按 rank（学习顺序）贪心解决。</span></div>
+    <div><strong>Pre-tokenization</strong> — Split text on word boundaries (regex) before BPE to prevent cross-word merges. GPT-2 uses a regex that isolates words, numbers, punctuation.<br><span class="zh">预分词：在 BPE 之前用正则按词边界切分，防止跨词合并。GPT-2 用正则分离单词、数字、标点。</span></div>
+    <div><strong>Vocabulary Size</strong> — GPT-2: 50,257 tokens. GPT-4/5 (o200k): 200,019 tokens. Larger vocab = higher compression but sparser embeddings.<br><span class="zh">词表大小——GPT-2: 5 万，GPT-4/5: 20 万。词表越大压缩越好，但 embedding 更稀疏。</span></div>
+    <div><strong>The Bitter Lesson</strong> — Not "scale is all that matters" but "algorithms that scale are what matter." Efficiency is more important at larger scales.<br><span class="zh">苦涩的教训：不是「规模就是一切」，而是「能 scale 的算法才重要」。规模越大，效率越关键。</span></div>
+    <div><strong>Three Types of Knowledge</strong> — Mechanics (how things work), Mindset (squeeze hardware), Intuitions (which decisions yield good accuracy). CS336 teaches the first two.<br><span class="zh">三类知识：机制（事物如何运作）、心态（榨干硬件）、直觉（哪些决策带来好效果）。CS336 教前两种。</span></div>
   </div>
 
   <h2>Notes</h2>
@@ -46,80 +46,90 @@
 
   <h4>The Disconnection Problem</h4>
   <p>Researchers are becoming increasingly disconnected from underlying technology:</p>
+  <p class="zh">研究者与底层技术的脱节越来越严重：</p>
   <ul>
-    <li><strong>2016:</strong> Researchers implemented and trained their own models</li>
-    <li><strong>2018:</strong> Researchers downloaded models (e.g., BERT) and fine-tuned them</li>
-    <li><strong>Today:</strong> Researchers prompt API models (GPT/Claude/Gemini)</li>
+    <li><strong>2016:</strong> Researchers implemented and trained their own models<span class="zh">（自己写模型、自己训练）</span></li>
+    <li><strong>2018:</strong> Researchers downloaded models (e.g., BERT) and fine-tuned them<span class="zh">（下载预训练模型做微调）</span></li>
+    <li><strong>Today:</strong> Researchers prompt API models (GPT/Claude/Gemini)<span class="zh">（直接调 API，写 prompt）</span></li>
   </ul>
   <p>Moving up levels of abstraction boosts productivity, but these abstractions are <em>leaky</em> (unlike programming languages or OSes). Full understanding is necessary for fundamental research.</p>
+  <p class="zh">抽象层级提高带来生产力提升，但这些抽象是「有漏洞的」（不像编程语言或操作系统那么干净）。要做根本性研究，必须深入理解底层。</p>
 
   <h4>The Industrialization of LMs</h4>
+  <p class="zh">语言模型的工业化——前沿模型已经贵到学术界无法企及：</p>
   <ul>
-    <li>GPT-4 reportedly cost ~$100M to train (2023)</li>
-    <li>xAI built a cluster with 230K GPUs for Grok (2025)</li>
-    <li>Frontier model internals are secret — GPT-4 technical report says essentially nothing about architecture</li>
+    <li>GPT-4 reportedly cost ~$100M to train (2023)<span class="zh">（据报道花了约 1 亿美元训练）</span></li>
+    <li>xAI built a cluster with 230K GPUs for Grok (2025)<span class="zh">（xAI 搭了 23 万张 GPU 的集群）</span></li>
+    <li>Frontier model internals are secret — GPT-4 technical report says essentially nothing about architecture<span class="zh">（GPT-4 技术报告几乎没透露任何架构细节）</span></li>
   </ul>
 
   <blockquote>
     accuracy = efficiency × resources<br>
-    Efficiency is <em>way more important</em> at larger scales — you can't afford to be wasteful. 44x algorithmic efficiency gain on ImageNet between 2012 and 2019.
+    Efficiency is <em>way more important</em> at larger scales — you can't afford to be wasteful. 44x algorithmic efficiency gain on ImageNet between 2012 and 2019.<br>
+    <span class="zh">准确率 = 效率 × 资源。规模越大，效率越重要——浪费不起。2012-2019 年间 ImageNet 上的算法效率提升了 44 倍。</span>
   </blockquote>
 
   <h4>What Can We Learn That Transfers?</h4>
+  <p class="zh">什么知识能迁移到前沿模型？</p>
   <table>
-    <tr><th>Knowledge Type</th><th>Transfers?</th><th>Examples</th></tr>
-    <tr><td><strong>Mechanics</strong></td><td>Yes</td><td>What a Transformer is, how model parallelism works</td></tr>
-    <tr><td><strong>Mindset</strong></td><td>Yes</td><td>Squeezing the most out of hardware, taking scaling seriously</td></tr>
-    <tr><td><strong>Intuitions</strong></td><td>Partially</td><td>Which data/modeling decisions yield good accuracy (may not transfer across scales)</td></tr>
+    <tr><th>Knowledge Type</th><th>Transfers?</th><th>Examples</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Mechanics</strong></td><td>Yes</td><td>What a Transformer is, how model parallelism works</td><td class="zh">机制：Transformer 怎么运作，模型并行怎么做</td></tr>
+    <tr><td><strong>Mindset</strong></td><td>Yes</td><td>Squeezing the most out of hardware, taking scaling seriously</td><td class="zh">心态：榨干硬件性能，认真对待 scaling</td></tr>
+    <tr><td><strong>Intuitions</strong></td><td>Partially</td><td>Which data/modeling decisions yield good accuracy (may not transfer across scales)</td><td class="zh">直觉：哪些决策带来好效果（不一定跨规模迁移）</td></tr>
   </table>
 
   <!-- ══════════════════════════════════════════════ -->
   <h3>Part 2: LM History & Landscape</h3>
 
   <h4>Timeline</h4>
+  <p class="zh">语言模型发展时间线：</p>
   <ul>
-    <li><strong>Pre-neural:</strong> Shannon (entropy of English), n-gram LMs for MT and ASR</li>
-    <li><strong>Neural ingredients (2010s):</strong> LSTM → first neural LM (Bengio 2003) → seq2seq → attention → Transformer (2017) → MoE</li>
-    <li><strong>Early foundation models:</strong> ELMo (LSTM pretrain) → BERT (Transformer pretrain + fine-tune) → T5 (text-to-text)</li>
-    <li><strong>Scaling era:</strong> GPT-2 (1.5B, zero-shot) → scaling laws (Kaplan) → GPT-3 (175B, in-context learning) → PaLM (540B) → Chinchilla (70B, compute-optimal)</li>
+    <li><strong>Pre-neural:</strong> Shannon (entropy of English), n-gram LMs for MT and ASR<span class="zh">（香农研究英语熵，n-gram 用于机器翻译和语音识别）</span></li>
+    <li><strong>Neural ingredients (2010s):</strong> LSTM → first neural LM (Bengio 2003) → seq2seq → attention → Transformer (2017) → MoE<span class="zh">（神经网络基本组件逐步出现）</span></li>
+    <li><strong>Early foundation models:</strong> ELMo (LSTM pretrain) → BERT (Transformer pretrain + fine-tune) → T5 (text-to-text)<span class="zh">（预训练+微调范式的建立）</span></li>
+    <li><strong>Scaling era:</strong> GPT-2 (1.5B, zero-shot) → scaling laws (Kaplan) → GPT-3 (175B, in-context learning) → PaLM (540B) → Chinchilla (70B, compute-optimal)<span class="zh">（拥抱规模化：scaling laws 给大力出奇迹提供了理论依据）</span></li>
   </ul>
 
   <h4>Open Models Landscape</h4>
-  <p><strong>Open-weight</strong> (weights + paper): LLaMA, Mistral/Mixtral, DeepSeek, Qwen, Kimi, GLM — approaching closed model quality.</p>
-  <p><strong>Open-source</strong> (weights + paper + code + data): OLMo (AI2), Nemotron (NVIDIA), Marin — full transparency for research.</p>
+  <p class="zh">开源模型生态：</p>
+  <p><strong>Open-weight</strong> (weights + paper): LLaMA, Mistral/Mixtral, DeepSeek, Qwen, Kimi, GLM — approaching closed model quality.<br><span class="zh">开放权重（公开模型参数+论文）：正在逼近闭源模型的水平。</span></p>
+  <p><strong>Open-source</strong> (weights + paper + code + data): OLMo (AI2), Nemotron (NVIDIA), Marin — full transparency for research.<br><span class="zh">完全开源（权重+论文+代码+数据）：为研究提供完全透明度。CS336 的教学正是建立在这些开源工作之上。</span></p>
 
   <h4>Evolution of "Language Model"</h4>
+  <p class="zh">「语言模型」含义的演变：</p>
   <ul>
-    <li>2018 (BERT): something you <strong>fine-tune</strong></li>
-    <li>2020 (GPT-3): something you <strong>prompt</strong></li>
-    <li>2022 (ChatGPT): something you <strong>talk to</strong></li>
-    <li>2026 (agents): something that <strong>acts autonomously</strong></li>
+    <li>2018 (BERT): something you <strong>fine-tune</strong><span class="zh">（拿来微调的东西）</span></li>
+    <li>2020 (GPT-3): something you <strong>prompt</strong><span class="zh">（拿来写提示词的东西）</span></li>
+    <li>2022 (ChatGPT): something you <strong>talk to</strong><span class="zh">（拿来对话的东西）</span></li>
+    <li>2026 (agents): something that <strong>acts autonomously</strong><span class="zh">（自主行动的 agent）</span></li>
   </ul>
-  <p>The fundamentals are the same (attention, kernels, optimization). The specs change (longer context, inference efficiency).</p>
+  <p>The fundamentals are the same (attention, kernels, optimization). The specs change (longer context, inference efficiency).<br><span class="zh">底层基础不变（attention、kernels、optimization），但规格在变（更长上下文、更高效推理）。</span></p>
 
   <!-- ══════════════════════════════════════════════ -->
   <h3>Part 3: Course Syllabus Overview</h3>
 
   <table>
-    <tr><th>Module</th><th>Assignment</th><th>Key Topics</th></tr>
-    <tr><td><strong>Basics</strong></td><td>A1</td><td>BPE tokenizer, Transformer, AdamW, training loop</td></tr>
-    <tr><td><strong>Systems</strong></td><td>A2</td><td>Triton kernels (fused RMSNorm), DDP, optimizer sharding</td></tr>
-    <tr><td><strong>Scaling</strong></td><td>A3</td><td>Scaling laws, IsoFLOP, hyperparameter extrapolation</td></tr>
-    <tr><td><strong>Data</strong></td><td>A4</td><td>HTML→text, quality filtering, MinHash dedup, data mixing</td></tr>
-    <tr><td><strong>Alignment</strong></td><td>A5</td><td>DPO, GRPO</td></tr>
+    <tr><th>Module</th><th>Assignment</th><th>Key Topics</th><th class="zh">中文说明</th></tr>
+    <tr><td><strong>Basics</strong></td><td>A1</td><td>BPE tokenizer, Transformer, AdamW, training loop</td><td class="zh">基础：分词器、模型架构、优化器、训练循环</td></tr>
+    <tr><td><strong>Systems</strong></td><td>A2</td><td>Triton kernels (fused RMSNorm), DDP, optimizer sharding</td><td class="zh">系统：自定义 GPU 核、分布式训练、优化器分片</td></tr>
+    <tr><td><strong>Scaling</strong></td><td>A3</td><td>Scaling laws, IsoFLOP, hyperparameter extrapolation</td><td class="zh">缩放定律：用小模型实验预测大模型最优超参</td></tr>
+    <tr><td><strong>Data</strong></td><td>A4</td><td>HTML→text, quality filtering, MinHash dedup, data mixing</td><td class="zh">数据：文本提取、质量过滤、去重、数据配比</td></tr>
+    <tr><td><strong>Alignment</strong></td><td>A5</td><td>DPO, GRPO</td><td class="zh">对齐：直接偏好优化、分组相对策略优化</td></tr>
   </table>
 
   <blockquote>
-    High-level principle: everything is about balancing <strong>expressivity</strong> (represent complex dependencies), <strong>stability</strong> (keep norms in goldilocks zone), and <strong>efficiency</strong> (runs fast on hardware).
+    High-level principle: everything is about balancing <strong>expressivity</strong> (represent complex dependencies), <strong>stability</strong> (keep norms in goldilocks zone), and <strong>efficiency</strong> (runs fast on hardware).<br>
+    <span class="zh">核心原则：一切都是在平衡三件事——表达力（能表示复杂依赖）、稳定性（参数和梯度保持在合理范围）、效率（在硬件上跑得快）。</span>
   </blockquote>
 
   <p>Everything is about efficiency — we are compute-constrained today:</p>
+  <p class="zh">当下我们处于「算力受限」时代，一切设计都围绕效率展开：</p>
   <ul>
-    <li>Systems: clearly about efficiency</li>
-    <li>Tokenization: raw bytes would be elegant but compute-inefficient with current architectures</li>
-    <li>Architecture: many changes motivated by reducing memory/FLOPs (GQA, sliding window attention)</li>
-    <li>Data filtering: avoid wasting compute on bad/irrelevant data</li>
-    <li>Scaling laws: use smaller models to find good hyperparameters cheaply</li>
+    <li>Systems: clearly about efficiency<span class="zh">（系统层面：显然是效率问题）</span></li>
+    <li>Tokenization: raw bytes would be elegant but compute-inefficient with current architectures<span class="zh">（分词：直接用字节更优雅，但对目前架构来说太浪费算力）</span></li>
+    <li>Architecture: many changes motivated by reducing memory/FLOPs (GQA, sliding window attention)<span class="zh">（架构：很多改动是为了省显存/算力，如 GQA、滑动窗口注意力）</span></li>
+    <li>Data filtering: avoid wasting compute on bad/irrelevant data<span class="zh">（数据过滤：避免在垃圾数据上浪费宝贵算力）</span></li>
+    <li>Scaling laws: use smaller models to find good hyperparameters cheaply<span class="zh">（缩放定律：用小模型便宜地找到好的超参数）</span></li>
   </ul>
 
   <!-- ══════════════════════════════════════════════ -->
@@ -129,63 +139,71 @@
 
   <h4>The Problem</h4>
   <p>A language model operates on <strong>sequences of integers</strong> (tokens), but raw input is a <strong>Unicode string</strong> (bytes). We need <code>encode(str → list[int])</code> and <code>decode(list[int] → str)</code> that round-trip correctly.</p>
+  <p class="zh">语言模型的输入是整数序列（tokens），但原始输入是 Unicode 字符串。需要 encode（文本→整数）和 decode（整数→文本）两个方法，且必须能完美还原（round-trip）。</p>
 
   <h4>Approach 1: Character Tokenizer</h4>
   <p>Map each Unicode character to its code point via <code>ord()</code>.</p>
+  <p class="zh">字符分词器：把每个 Unicode 字符映射为其编码点（code point）。</p>
 <pre><code>class CharacterTokenizer(Tokenizer):
     def encode(self, string):
         return list(map(ord, string))  # ord("a")=97, ord("🌍")=127757
     def decode(self, indices):
         return "".join(map(chr, indices))</code></pre>
   <ul>
-    <li><strong>Vocab size:</strong> ~150K Unicode characters — huge and sparse</li>
-    <li><strong>Compression:</strong> ~1 byte/token — poor</li>
-    <li>Worst of both worlds: large vocabulary AND low compression</li>
+    <li><strong>Vocab size:</strong> ~150K Unicode characters — huge and sparse<span class="zh">（词表约 15 万——巨大且稀疏）</span></li>
+    <li><strong>Compression:</strong> ~1 byte/token — poor<span class="zh">（压缩率约 1——很差）</span></li>
+    <li>Worst of both worlds: large vocabulary AND low compression<span class="zh">（两头不讨好：词表大 + 压缩差）</span></li>
   </ul>
 
   <h4>Approach 2: Byte Tokenizer</h4>
   <p>Encode string as UTF-8 bytes. Each byte is a token (0-255).</p>
+  <p class="zh">字节分词器：将字符串编码为 UTF-8 字节，每个字节就是一个 token（取值 0-255）。</p>
 <pre><code>class ByteTokenizer(Tokenizer):
     def encode(self, string):
         return list(map(int, string.encode("utf-8")))
     def decode(self, indices):
         return bytes(indices).decode("utf-8")</code></pre>
   <ul>
-    <li><strong>Vocab size:</strong> 256 — nice and small</li>
-    <li><strong>Compression:</strong> exactly 1.0 — terrible (sequences are too long for Transformer's quadratic attention)</li>
-    <li>Multi-byte characters: <code>"a"</code> = 1 byte, <code>"🌍"</code> = 4 bytes, <code>"你"</code> = 3 bytes</li>
+    <li><strong>Vocab size:</strong> 256 — nice and small<span class="zh">（词表只有 256——非常小巧）</span></li>
+    <li><strong>Compression:</strong> exactly 1.0 — terrible (sequences are too long for Transformer's quadratic attention)<span class="zh">（压缩率恰好 1.0——太差了，序列太长，Transformer 的二次方注意力吃不消）</span></li>
+    <li>Multi-byte characters: <code>"a"</code> = 1 byte, <code>"🌍"</code> = 4 bytes, <code>"你"</code> = 3 bytes<span class="zh">（多字节字符：英文字母 1 字节，emoji 4 字节，中文 3 字节）</span></li>
   </ul>
 
   <h4>Approach 3: Word Tokenizer</h4>
   <p>Split on whitespace/punctuation using regex like <code>\w+|.</code></p>
+  <p class="zh">词分词器：用正则表达式按空格/标点切分。</p>
   <ul>
-    <li><strong>Compression:</strong> good (each token is a whole word)</li>
-    <li><strong>Vocab size:</strong> unbounded — depends on data</li>
-    <li>Problems: rare words waste vocab slots, OOV (unseen words → UNK token), no fixed vocab size</li>
+    <li><strong>Compression:</strong> good (each token is a whole word)<span class="zh">（压缩率好——每个 token 是一个完整单词）</span></li>
+    <li><strong>Vocab size:</strong> unbounded — depends on data<span class="zh">（词表大小无上限——取决于数据）</span></li>
+    <li>Problems: rare words waste vocab slots, OOV (unseen words → UNK token), no fixed vocab size<span class="zh">（问题：稀有词浪费词表位置，未见过的词变成 UNK，词表大小不可控）</span></li>
   </ul>
 
   <h4>Approach 4: Byte Pair Encoding (BPE) ★</h4>
   <p>Originally a data compression algorithm (Gage, 1994). Adapted to NLP by Sennrich et al. (2016), then used by GPT-2.</p>
+  <p class="zh">BPE 最初是数据压缩算法（1994），后被 Sennrich（2016）引入 NLP 用于机器翻译，GPT-2 正式采用。</p>
   <p>Core idea: <strong>train</strong> the tokenizer on data to build a vocabulary tailored to the corpus. Common byte sequences → single tokens. Rare sequences → many tokens.</p>
+  <p class="zh">核心思想：在数据上<strong>训练</strong>分词器，构建针对语料库定制的词表。常见字节序列→单个 token，罕见序列→多个 token。这是一种自适应的压缩方法。</p>
 
   <h4>BPE Training Algorithm</h4>
+  <p class="zh">BPE 训练算法：从字节开始，反复找出出现最频繁的相邻 token 对，将其合并为一个新 token。</p>
 <pre><code>def train_bpe(string, num_merges):
-    indices = list(string.encode("utf-8"))  # Start with raw bytes
+    indices = list(string.encode("utf-8"))  # 第1步：把文本转为字节列表
     merges = {}
-    vocab = {x: bytes([x]) for x in range(256)}  # Initial vocab: 256 bytes
+    vocab = {x: bytes([x]) for x in range(256)}  # 初始词表：256个字节
 
     for i in range(num_merges):
-        counts = count_adjacent_pairs(indices)  # Step 1: count pairs
-        pair = max(counts, key=counts.get)       # Step 2: find most frequent
-        new_index = 256 + i                      # Step 3: assign new token ID
+        counts = count_adjacent_pairs(indices)  # 第2步：统计所有相邻对的出现次数
+        pair = max(counts, key=counts.get)       # 第3步：找到出现最多的相邻对
+        new_index = 256 + i                      # 第4步：分配新的 token ID
         merges[pair] = new_index
         vocab[new_index] = vocab[pair[0]] + vocab[pair[1]]
-        indices = merge(indices, pair, new_index) # Step 4: replace all occurrences
+        indices = merge(indices, pair, new_index) # 第5步：把所有该对替换为新token
 
     return BPETokenizerParams(vocab=vocab, merges=merges)</code></pre>
 
   <h4>BPE Training Example</h4>
   <p>Training on <code>"the cat in the hat"</code> with 3 merges:</p>
+  <p class="zh">以 "the cat in the hat" 为例，执行 3 次合并：</p>
   <table>
     <tr><th>Step</th><th>Most Frequent Pair</th><th>New Token</th><th>Result</th></tr>
     <tr><td>Init</td><td>—</td><td>—</td><td><code>[116, 104, 101, 32, 99, 97, 116, ...]</code> (raw bytes)</td></tr>
@@ -193,63 +211,70 @@
     <tr><td>2</td><td>next most frequent pair</td><td>257</td><td>merged sequence</td></tr>
     <tr><td>3</td><td>next most frequent pair</td><td>258</td><td>merged sequence</td></tr>
   </table>
-  <p>Each merge step: vocab size +1, compression ratio increases.</p>
+  <p>Each merge step: vocab size +1, compression ratio increases.<span class="zh">（每次合并：词表 +1，压缩率提升。）</span></p>
 
   <h4>BPE Encoding (Using the Trained Tokenizer)</h4>
+  <p class="zh">BPE 编码：拿到训练好的合并规则后，对新文本进行分词。按训练时的顺序逐一尝试每个 merge rule。</p>
 <pre><code>class BPETokenizer(Tokenizer):
     def encode(self, string):
-        indices = list(string.encode("utf-8"))
+        indices = list(string.encode("utf-8"))      # 先转为字节
         for pair, new_index in self.params.merges.items():
-            indices = merge(indices, pair, new_index)
+            indices = merge(indices, pair, new_index) # 按顺序尝试每个合并
         return indices
 
     def decode(self, indices):
         return b"".join(self.params.vocab[i] for i in indices).decode("utf-8")</code></pre>
   <p>Note: this naive implementation loops over <em>all</em> merges for every string. Assignment 1 requires an efficient version.</p>
+  <p class="zh">注意：这是最朴素的实现，对每个字符串都遍历所有合并规则。Assignment 1 要求实现高效版本（用 hash map + 优先队列）。</p>
 
   <h4>The <code>merge()</code> Helper</h4>
+  <p class="zh">merge() 辅助函数：扫描序列，把所有匹配的相邻对替换为新 token。</p>
 <pre><code>def merge(indices, pair, new_index):
     new_indices = []
     i = 0
     while i < len(indices):
         if i+1 < len(indices) and indices[i]==pair[0] and indices[i+1]==pair[1]:
             new_indices.append(new_index)
-            i += 2  # Skip both elements of the pair
+            i += 2  # 跳过被合并的两个元素
         else:
             new_indices.append(indices[i])
             i += 1
     return new_indices</code></pre>
 
   <h4>Key Observations from Tokenizer Playground</h4>
+  <p class="zh">在 tiktokenizer 上观察到的现象：</p>
   <ul>
-    <li>A word and its preceding space are often the same token: <code>" world"</code> ≠ <code>"world"</code></li>
-    <li>Same word at start vs middle of sentence → different tokens</li>
-    <li>Numbers get split every few digits</li>
-    <li>GPT-5 (o200k) vocab size: 200,019 tokens</li>
+    <li>A word and its preceding space are often the same token: <code>" world"</code> ≠ <code>"world"</code><span class="zh">（单词和前面的空格经常被合并为同一个 token）</span></li>
+    <li>Same word at start vs middle of sentence → different tokens<span class="zh">（句首和句中的同一个词会被分成不同的 token）</span></li>
+    <li>Numbers get split every few digits<span class="zh">（数字每隔几位就被切一刀）</span></li>
+    <li>GPT-5 (o200k) vocab size: 200,019 tokens<span class="zh">（GPT-5 词表约 20 万个 token）</span></li>
   </ul>
 
   <h4>Tokenization Summary</h4>
+  <p class="zh">四种分词方法对比总结：</p>
   <table>
-    <tr><th>Method</th><th>Vocab Size</th><th>Compression</th><th>Verdict</th></tr>
-    <tr><td>Character</td><td>~150K</td><td>~1</td><td>Large vocab + low compression = worst of both worlds</td></tr>
-    <tr><td>Byte</td><td>256</td><td>1.0</td><td>Small vocab but sequences too long</td></tr>
-    <tr><td>Word</td><td>Unbounded</td><td>High</td><td>Good compression but OOV problem</td></tr>
-    <tr><td><strong>BPE</strong></td><td>Controllable</td><td>~4x</td><td>Best balance — data-driven, no OOV</td></tr>
+    <tr><th>Method</th><th>Vocab Size</th><th>Compression</th><th>Verdict</th><th class="zh">中文总结</th></tr>
+    <tr><td>Character</td><td>~150K</td><td>~1</td><td>Large vocab + low compression = worst of both worlds</td><td class="zh">两头不讨好</td></tr>
+    <tr><td>Byte</td><td>256</td><td>1.0</td><td>Small vocab but sequences too long</td><td class="zh">词表小但序列太长</td></tr>
+    <tr><td>Word</td><td>Unbounded</td><td>High</td><td>Good compression but OOV problem</td><td class="zh">压缩好但有未知词问题</td></tr>
+    <tr><td><strong>BPE</strong></td><td>Controllable</td><td>~4x</td><td>Best balance — data-driven, no OOV</td><td class="zh">最佳平衡——数据驱动，无 OOV</td></tr>
   </table>
 
   <blockquote>
-    The dream: tokenizer-free architectures that operate directly on bytes (ByT5, MegaByte, BLT). Promising but not yet scaled to the frontier. Whatever solution needs: (1) model operates on chunks/abstractions of the sequence, (2) chunks should be variable-length (allocate more capacity to interesting parts).
+    The dream: tokenizer-free architectures that operate directly on bytes (ByT5, MegaByte, BLT). Promising but not yet scaled to the frontier. Whatever solution needs: (1) model operates on chunks/abstractions of the sequence, (2) chunks should be variable-length (allocate more capacity to interesting parts).<br>
+    <span class="zh">终极理想：无需分词器、直接在字节上操作的架构（ByT5、MegaByte、BLT）。很有前景但尚未在前沿规模验证。无论什么方案都需要：(1) 模型在序列的「块」上操作，(2) 块是变长的（对有意义的部分分配更多建模能力）。</span>
   </blockquote>
 
   <!-- ══════════════════════════════════════════════ -->
   <h3>Assignment 1 Preview</h3>
   <p>GitHub: <a href="https://github.com/stanford-cs336/assignment1-basics" target="_blank">assignment1-basics ↗</a></p>
+  <p class="zh">作业 1 需要从零实现以下内容（不使用框架现成组件）：</p>
   <ul>
-    <li>Implement BPE tokenizer (efficient version with pre-tokenization and special tokens)</li>
-    <li>Implement Transformer, cross-entropy loss, AdamW optimizer, training loop</li>
-    <li>Resource accounting (FLOPs, memory)</li>
-    <li>Train on TinyStories and OpenWebText</li>
-    <li>Leaderboard: minimize OpenWebText perplexity given 45 minutes on a B200</li>
+    <li>Implement BPE tokenizer (efficient version with pre-tokenization and special tokens)<span class="zh">（实现高效 BPE 分词器，含预分词和特殊 token 处理）</span></li>
+    <li>Implement Transformer, cross-entropy loss, AdamW optimizer, training loop<span class="zh">（实现 Transformer 模型、交叉熵损失、AdamW 优化器、完整训练循环）</span></li>
+    <li>Resource accounting (FLOPs, memory)<span class="zh">（资源核算：计算 FLOPs 和显存用量）</span></li>
+    <li>Train on TinyStories and OpenWebText<span class="zh">（在 TinyStories 和 OpenWebText 数据集上训练）</span></li>
+    <li>Leaderboard: minimize OpenWebText perplexity given 45 minutes on a B200<span class="zh">（排行榜：在 B200 上 45 分钟内最小化 OpenWebText 困惑度）</span></li>
   </ul>
 
   <!-- ══════════════════════════════════════════════ -->
