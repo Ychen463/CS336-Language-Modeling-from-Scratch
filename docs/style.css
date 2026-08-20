@@ -535,22 +535,7 @@ figcaption .ft {
 .toc[open] summary::before { transform: rotate(90deg); }
 .toc summary::-webkit-details-marker { display: none; }
 .toc-body { margin-top: 12px; }
-.toc ol {
-  list-style: none;
-  counter-reset: toc-section;
-  padding: 0;
-  margin: 0;
-}
-.toc > .toc-body > ol > li {
-  counter-increment: toc-section;
-  margin-bottom: 2px;
-}
-.toc > .toc-body > ol > li > a::before {
-  content: counter(toc-section) ". ";
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-}
+.toc ul { list-style: none; padding: 0; margin: 0; }
 .toc a {
   display: block;
   padding: 4px 0;
@@ -561,17 +546,15 @@ figcaption .ft {
   transition: color .15s;
 }
 .toc a:hover { color: var(--accent); }
-.toc .toc-sub {
-  padding-left: 20px;
-  margin: 0;
-}
-.toc .toc-sub li { margin-bottom: 0; }
-.toc .toc-sub a {
-  font-size: 13px;
-  color: var(--muted);
-  padding: 2px 0;
-}
-.toc .toc-sub a:hover { color: var(--accent); }
+.toc-l1 > li { margin-bottom: 2px; }
+.toc-l2 { padding-left: 20px; }
+.toc-l2 > li { margin-bottom: 0; }
+.toc-l2 a { font-size: 13px; color: var(--muted); padding: 2px 0; }
+.toc-l2 a:hover { color: var(--accent); }
+.toc-l3 { padding-left: 18px; }
+.toc-l3 > li { margin-bottom: 0; }
+.toc-l3 a { font-size: 12.5px; color: var(--muted); padding: 1px 0; }
+.toc-l3 a:hover { color: var(--accent); }
 
 /* ── Concept group headings ── */
 .concepts-group { margin-top: 20px; }
