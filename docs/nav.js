@@ -1,4 +1,4 @@
-// Shared sidebar, topbar, and mobile menu logic
+// Shared topbar, sidebar, and mobile menu logic
 (function () {
   var modules = [
     { title: 'Basics', lectures: [
@@ -53,8 +53,28 @@
     }
   }
 
-  // ── Build sidebar ──
-  var html = '<div class="logo">CS<span>336</span> Notes</div>';
+  // ── Build topbar (full-width, above everything) ──
+  var topbar = document.createElement('div');
+  topbar.className = 'topbar';
+  topbar.innerHTML =
+    '<div class="topbar-left">' +
+      '<a href="index.html" class="topbar-brand">CS<span>336</span></a>' +
+      '<span class="topbar-sep">/</span>' +
+      '<span class="topbar-page">' + (pageName || 'Language Modeling from Scratch') + '</span>' +
+    '</div>' +
+    '<div class="topbar-right">' +
+      '<div class="zh-toggle">' +
+        '<label class="toggle-label">' +
+          '<span class="toggle-text">中文</span>' +
+          '<input type="checkbox" id="zh-switch">' +
+          '<span class="toggle-slider"></span>' +
+        '</label>' +
+      '</div>' +
+    '</div>';
+  document.body.insertBefore(topbar, document.body.firstChild);
+
+  // ── Build sidebar (no logo, starts with nav links) ──
+  var html = '';
   html += '<a href="index.html"' + (page === 'index.html' ? ' class="active"' : '') + '>Overview</a>';
   html += '<a href="assignments.html"' + (page === 'assignments.html' ? ' class="active"' : '') + '>Assignments</a>';
   html += '<a href="references.html"' + (page === 'references.html' ? ' class="active"' : '') + '>References</a>';
@@ -74,33 +94,14 @@
   var nav = document.getElementById('sidebar');
   if (nav) nav.innerHTML = html;
 
-  // ── Build topbar ──
-  var topbar = document.createElement('div');
-  topbar.className = 'topbar';
-  topbar.innerHTML =
-    '<div class="topbar-left">' +
-      '<span class="topbar-brand">CS<span>336</span></span>' +
-      '<span class="topbar-sep">/</span>' +
-      '<span class="topbar-page">' + (pageName || 'Language Modeling from Scratch') + '</span>' +
-    '</div>' +
-    '<div class="topbar-right">' +
-      '<div class="zh-toggle">' +
-        '<label class="toggle-label">' +
-          '<span class="toggle-text">中文</span>' +
-          '<input type="checkbox" id="zh-switch">' +
-          '<span class="toggle-slider"></span>' +
-        '</label>' +
-      '</div>' +
-    '</div>';
-
-  // Wrap main in a content column and insert topbar above it
+  // ── Wrap sidebar + main in body-row ──
   var main = document.querySelector('main');
-  if (main) {
-    var col = document.createElement('div');
-    col.className = 'content-col';
-    main.parentNode.insertBefore(col, main);
-    col.appendChild(topbar);
-    col.appendChild(main);
+  if (nav && main) {
+    var row = document.createElement('div');
+    row.className = 'body-row';
+    nav.parentNode.insertBefore(row, nav);
+    row.appendChild(nav);
+    row.appendChild(main);
   }
 
   // ── Chinese annotation toggle logic ──
