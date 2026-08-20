@@ -207,19 +207,22 @@ main > h2 {
   border-left: 4px solid var(--accent);
   padding-left: 10px;
 }
-main > h3 {
+main > h3[id] {
   font-size: 17px;
   font-weight: 600;
   margin: 24px 0 8px;
-  margin-left: 12px;
+  padding-left: 20px;
   color: var(--fg);
 }
-main > h4 {
+main > h4[id] {
   font-size: 15px;
   font-weight: 600;
   margin: 18px 0 6px;
-  margin-left: 28px;
+  padding-left: 44px;
 }
+/* h3/h4 without id (e.g. inside .tldr, .card) keep default */
+main h3 { font-size: 17px; font-weight: 600; margin: 24px 0 8px; color: var(--fg); }
+main h4 { font-size: 15px; font-weight: 600; margin: 18px 0 6px; }
 
 /* ── Auto-numbering via CSS counters ── */
 main { counter-reset: h2cnt; }
