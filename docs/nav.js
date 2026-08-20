@@ -1,4 +1,4 @@
-// Shared sidebar and mobile menu logic
+// Shared sidebar, topbar, and mobile menu logic
 (function () {
   var modules = [
     { title: 'Basics', lectures: [
@@ -32,6 +32,28 @@
 
   var page = location.pathname.split('/').pop() || 'index.html';
 
+  // ── Determine current page title ──
+  var pageNames = {
+    'index.html': 'Overview',
+    'assignments.html': 'Assignments',
+    'references.html': 'References',
+    'algorithms.html': 'Algorithms'
+  };
+  var pageName = pageNames[page] || '';
+  if (!pageName) {
+    for (var mi = 0; mi < modules.length; mi++) {
+      var ls = modules[mi].lectures;
+      for (var li = 0; li < ls.length; li++) {
+        if (page === 'lec' + ls[li][0] + '.html') {
+          pageName = 'Lec ' + ls[li][0] + ': ' + ls[li][1].replace(/&amp;/g, '&');
+          break;
+        }
+      }
+      if (pageName) break;
+    }
+  }
+
+  // ── Build sidebar ──
   var html = '<div class="logo">CS<span>336</span> Notes</div>';
   html += '<a href="index.html"' + (page === 'index.html' ? ' class="active"' : '') + '>Overview</a>';
   html += '<a href="assignments.html"' + (page === 'assignments.html' ? ' class="active"' : '') + '>Assignments</a>';
@@ -47,23 +69,43 @@
       html += '<a href="' + href + '"' + cls + '><span class="num">' + num + '</span>' + label + '</a>';
     }
   }
-  // Chinese toggle
-  html += '<div class="zh-toggle">';
-  html += '<label class="toggle-label">';
-  html += '<span class="toggle-text">中文注释</span>';
-  html += '<input type="checkbox" id="zh-switch">';
-  html += '<span class="toggle-slider"></span>';
-  html += '</label>';
-  html += '</div>';
-
   html += '<a href="https://github.com/Ychen463/CS336-Language-Modeling-from-Scratch" target="_blank" class="ghside">GitHub</a>';
 
   var nav = document.getElementById('sidebar');
   if (nav) nav.innerHTML = html;
 
-  // Chinese annotation toggle logic
+  // ── Build topbar ──
+  var topbar = document.createElement('div');
+  topbar.className = 'topbar';
+  topbar.innerHTML =
+    '<div class="topbar-left">' +
+      '<span class="topbar-brand">CS<span>336</span></span>' +
+      '<span class="topbar-sep">/</span>' +
+      '<span class="topbar-page">' + (pageName || 'Language Modeling from Scratch') + '</span>' +
+    '</div>' +
+    '<div class="topbar-right">' +
+      '<div class="zh-toggle">' +
+        '<label class="toggle-label">' +
+          '<span class="toggle-text">中文</span>' +
+          '<input type="checkbox" id="zh-switch">' +
+          '<span class="toggle-slider"></span>' +
+        '</label>' +
+      '</div>' +
+    '</div>';
+
+  // Wrap main in a content column and insert topbar above it
+  var main = document.querySelector('main');
+  if (main) {
+    var col = document.createElement('div');
+    col.className = 'content-col';
+    main.parentNode.insertBefore(col, main);
+    col.appendChild(topbar);
+    col.appendChild(main);
+  }
+
+  // ── Chinese annotation toggle logic ──
   var zhSwitch = document.getElementById('zh-switch');
-  var zhOn = localStorage.getItem('zh-annotations') !== 'off'; // default: on
+  var zhOn = localStorage.getItem('zh-annotations') !== 'off';
   zhSwitch.checked = zhOn;
   if (!zhOn) document.body.classList.add('hide-zh');
   zhSwitch.onchange = function () {
@@ -76,7 +118,7 @@
     }
   };
 
-  // Mobile menu button
+  // ── Mobile menu button ──
   var btn = document.createElement('button');
   btn.className = 'menu-btn';
   btn.textContent = '\u2630';
