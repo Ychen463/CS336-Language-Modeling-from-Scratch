@@ -267,6 +267,7 @@
 
   <!-- ══════════════════════════════════════════════ -->
   <h3>Tokenization Mental Framework</h3>
+  <p>Think of tokenization as a simple framework. Whenever you see a tokenizer, think about these three goals:</p>
   <p class="zh">把 Tokenization 记成一个非常简单的框架。以后看到 tokenizer，脑子里想这四件事：</p>
 
 <pre><code>            Raw text / bytes
@@ -290,19 +291,24 @@
                   ▼
              Transformer</code></pre>
 
+  <p>The ultimate goal of tokenization is NOT "splitting sentences into words." More precisely:</p>
   <p class="zh">所以 tokenization 的终极目标并不是「把句子拆成单词」。更准确地说是：</p>
 
   <blockquote>
-    <span class="zh">找到一种离散表示，使任意原始输入都可以表示，同时在 <strong>vocabulary size</strong>、<strong>sequence length</strong> 和<strong>模型计算效率</strong>之间取得好的平衡。</span>
+    Find a discrete representation that can encode any raw input, while striking a good balance between <strong>vocabulary size</strong>, <strong>sequence length</strong>, and <strong>computational efficiency</strong>.<br>
+    <span class="zh">找到一种离散表示，使任意原始输入都可以表示，同时在 vocabulary size、sequence length 和模型计算效率之间取得好的平衡。</span>
   </blockquote>
 
+  <p>BPE's core strategy is:</p>
   <p class="zh">而 BPE 的核心策略就是：</p>
 
   <blockquote>
-    <span class="zh">把经常一起出现的 byte / character sequence 合并成一个 token，从而<strong>压缩常见语言模式</strong>。</span>
+    Merge frequently co-occurring byte/character sequences into a single token, thereby <strong>compressing common language patterns</strong>.<br>
+    <span class="zh">把经常一起出现的 byte / character sequence 合并成一个 token，从而压缩常见语言模式。</span>
   </blockquote>
 
-  <p class="zh">如果你把这一点真正理解了，后面 CS336 让你自己实现 BPE tokenizer 时，就不会觉得自己只是在写一个字符串处理算法——你实际上是在<strong>设计 Transformer 所看到的输入空间和计算粒度</strong>。</p>
+  <p>Once you truly understand this, implementing a BPE tokenizer in Assignment 1 won't feel like just writing a string processing algorithm — you are actually <strong>designing the input space and computational granularity</strong> that the Transformer sees.</p>
+  <p class="zh">如果你把这一点真正理解了，后面 CS336 让你自己实现 BPE tokenizer 时，就不会觉得自己只是在写一个字符串处理算法——你实际上是在设计 Transformer 所看到的输入空间和计算粒度。</p>
 
   <!-- ══════════════════════════════════════════════ -->
   <h3>Assignment 1 Preview</h3>
