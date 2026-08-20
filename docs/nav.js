@@ -25,6 +25,7 @@
   var html = '<div class="logo">CS<span>336</span> Notes</div>';
   html += '<a href="index.html"' + (page === 'index.html' ? ' class="active"' : '') + '>Overview</a>';
   html += '<a href="assignments.html"' + (page === 'assignments.html' ? ' class="active"' : '') + '>Assignments</a>';
+  html += '<a href="references.html"' + (page === 'references.html' ? ' class="active"' : '') + '>References</a>';
   html += '<h2>Lectures</h2>';
   for (var i = 0; i < lectures.length; i++) {
     var num = lectures[i][0], label = lectures[i][1];
