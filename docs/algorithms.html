@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Algorithm Deep Dives — CS336 Notes</title>
+<link rel="stylesheet" href="style.css">
+<script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+<nav class="sidebar" id="sidebar"></nav>
+
+<main>
+  <p style="font-size:14px;color:var(--muted);">CS336 Notes</p>
+  <h1 style="font-size:30px;margin-bottom:4px;">Algorithm Deep Dives</h1>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Key algorithms and derivations from CS336, organized by topic. Click to jump to a section.</p>
+
+  <!-- Jump links -->
+  <div class="concepts" style="margin-bottom:32px;">
+    <div><a href="#tokenization"><strong>Tokenization</strong></a> — BPE, pre-tokenization</div>
+    <div><a href="#transformer"><strong>Transformer</strong></a> — RoPE, RMSNorm, SwiGLU</div>
+    <div><a href="#attention"><strong>Attention Variants</strong></a> — MHA, MQA, GQA, MLA</div>
+    <div><a href="#moe"><strong>Mixture of Experts</strong></a> — Routing, load balancing</div>
+    <div><a href="#kernels"><strong>Kernels</strong></a> — Online softmax, FlashAttention, Triton</div>
+    <div><a href="#parallelism"><strong>Parallelism</strong></a> — FSDP, TP, PP</div>
+    <div><a href="#scaling"><strong>Scaling Laws</strong></a> — IsoFLOP, Chinchilla, muP</div>
+    <div><a href="#inference"><strong>Inference</strong></a> — KV cache, speculative decoding, quantization</div>
+    <div><a href="#alignment"><strong>Alignment</strong></a> — DPO, GRPO, PPO</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="tokenization">Tokenization & BPE</h2>
+  <p style="color:var(--muted);font-size:14px;">Lectures 01</p>
+
+  <div class="algo-card">
+    <h3>BPE Training Algorithm</h3>
+    <p class="algo-q">How to implement BPE efficiently without rescanning the entire corpus on every merge?</p>
+    <!-- Add notes: hash map + linked list approach, complexity analysis -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Deterministic BPE Encoding</h3>
+    <p class="algo-q">How are overlapping candidate pairs resolved during tokenization?</p>
+    <!-- Add notes: greedy rank-based priorities, leftmost-occurrence -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Pre-tokenization (GPT-2 BPE)</h3>
+    <p class="algo-q">Why split text into "words" before BPE? What problems does it prevent?</p>
+    <!-- Add notes: cross-word merges, leading space, SentencePiece alternatives -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="transformer">Transformer Architecture</h2>
+  <p style="color:var(--muted);font-size:14px;">Lectures 03, 04</p>
+
+  <div class="algo-card">
+    <h3>Rotary Position Embeddings (RoPE)</h3>
+    <p class="algo-q">How does RoPE encode relative position using 2D rotation in complex space?</p>
+    <p class="algo-hint">Key idea: $\langle f(q_m, m), f(k_n, n) \rangle = g(q_m, k_n, m-n)$ via rotation matrices.</p>
+    <!-- Add derivation notes -->
+  </div>
+
+  <div class="algo-card">
+    <h3>RMSNorm vs LayerNorm</h3>
+    <p class="algo-q">Why does RMSNorm work despite dropping mean-centering? What's the memory bandwidth gain?</p>
+    <!-- Add notes: 3D vs 4D elements, variance-only normalization sufficiency -->
+  </div>
+
+  <div class="algo-card">
+    <h3>SwiGLU FFN</h3>
+    <p class="algo-q">Why $d_{ff} = \frac{8}{3} d_{model}$? How does input-dependent gating improve over ReLU?</p>
+    <!-- Add derivation: parameter counting, gating mechanism -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="attention">Attention Variants</h2>
+  <p style="color:var(--muted);font-size:14px;">Lectures 03, 04, 10</p>
+
+  <div class="algo-card">
+    <h3>MHA vs MQA vs GQA</h3>
+    <p class="algo-q">How does KV cache memory scale across attention variants?</p>
+    <p class="algo-hint">MHA: $O(BNd)$, MQA: $O(BNd/h)$, GQA: $O(BNg \cdot d/h)$</p>
+    <!-- Add notes: memory bandwidth analysis, LLaMA examples -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Multi-head Latent Attention (MLA)</h3>
+    <p class="algo-q">How does DeepSeek's MLA compress KV cache via low-rank projection?</p>
+    <!-- Add notes: latent compression, comparison with GQA -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Linear Attention & State-Space Models</h3>
+    <p class="algo-q">How do Mamba / linear attention avoid the $O(N^2)$ bottleneck?</p>
+    <!-- Add notes: kernel trick, recurrence form, trade-offs -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="moe">Mixture of Experts</h2>
+  <p style="color:var(--muted);font-size:14px;">Lecture 04</p>
+
+  <div class="algo-card">
+    <h3>Top-K Routing & Gradients</h3>
+    <p class="algo-q">How does the Straight-Through Estimator (STE) handle non-differentiable TopK?</p>
+    <!-- Add notes: zero gradients for unselected experts, why load-balancing loss is needed -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Switch Transformer Load Balancing Loss</h3>
+    <p class="algo-q">How does $L_{aux} = \alpha \sum_i f_i \cdot P_i$ create equilibrating pressure?</p>
+    <!-- Add derivation: gradient ∝ (f_k - E[f]) -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Router Z-Loss</h3>
+    <p class="algo-q">Why add a log-sum-exp penalty on router logits for numerical stability?</p>
+    <!-- Add notes: overflow prevention in low-precision, regularizer effect -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Fine-Grained Expert Scaling</h3>
+    <p class="algo-q">How to achieve $4\times$ parameters with identical inference FLOPs?</p>
+    <p class="algo-hint">Mixtral 8x7B: $N_{fg}$ experts with smaller intermediate dims, parameter count scales by $N_{fg}/K$.</p>
+    <!-- Add derivation -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="kernels">GPU Kernels & FlashAttention</h2>
+  <p style="color:var(--muted);font-size:14px;">Lectures 05, 06</p>
+
+  <div class="algo-card">
+    <h3>Online Softmax Algorithm</h3>
+    <p class="algo-q">How to compute softmax in a single pass without knowing the global maximum?</p>
+    <p class="algo-hint">$m_{new} = \max(m^1, m^2)$, $\ell_{new} = e^{m^1 - m_{new}} \ell^1 + e^{m^2 - m_{new}} \ell^2$</p>
+    <!-- Add derivation: running max and denominator update rules -->
+  </div>
+
+  <div class="algo-card">
+    <h3>FlashAttention (Forward)</h3>
+    <p class="algo-q">How does tiled attention avoid materializing the $O(N^2)$ attention matrix?</p>
+    <!-- Add notes: tiling strategy, SRAM usage, IO complexity -->
+  </div>
+
+  <div class="algo-card">
+    <h3>FlashAttention Backward (Recomputation)</h3>
+    <p class="algo-q">Why recompute $QK^T$ in the backward pass instead of storing it?</p>
+    <p class="algo-hint">Recompute costs $O(N^2 d_k)$ FLOPs but saves $>2000\times$ memory for $N=4096$.</p>
+    <!-- Add notes: memory-compute trade-off analysis -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Triton Block-Centric Programming</h3>
+    <p class="algo-q">How does Triton differ from CUDA? Why is block-level abstraction advantageous?</p>
+    <!-- Add notes: vectorized offsets vs thread-level indexing, auto memory coalescing -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="parallelism">Parallelism Strategies</h2>
+  <p style="color:var(--muted);font-size:14px;">Lectures 07, 08</p>
+
+  <div class="algo-card">
+    <h3>AllReduce & Collective Operations</h3>
+    <p class="algo-q">What are the communication primitives and their costs?</p>
+    <!-- Add notes: all-reduce, all-gather, reduce-scatter, ring algorithm -->
+  </div>
+
+  <div class="algo-card">
+    <h3>FSDP / ZeRO-3 Communication Overlap</h3>
+    <p class="algo-q">Why does FSDP have $1.5\times$ communication volume but still scale well?</p>
+    <p class="algo-hint">Pipelining condition: $T_{compute}(L) \geq T_{comm}(L+1)$</p>
+    <!-- Add notes: computation-communication overlap, ZeRO stages -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Tensor Parallelism in MLP Blocks</h3>
+    <p class="algo-q">How does column-parallel + row-parallel avoid intermediate all_gather?</p>
+    <!-- Add derivation: Y = Σ G_i W_down_i, single all_reduce -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Pipeline Parallelism & Microbatching</h3>
+    <p class="algo-q">How to minimize pipeline bubble overhead?</p>
+    <p class="algo-hint">Optimal microbatch count: $m_{opt} = \sqrt{(p-1)B \cdot T_{comp}/T_{ov}}$</p>
+    <!-- Add notes: 1F1B schedule, interleaved stages -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="scaling">Scaling Laws</h2>
+  <p style="color:var(--muted);font-size:14px;">Lectures 09, 11</p>
+
+  <div class="algo-card">
+    <h3>Kaplan Scaling Laws</h3>
+    <p class="algo-q">How does loss scale as a power law with model size, data, and compute?</p>
+    <!-- Add notes: L(N) ∝ N^(-α), original findings -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Chinchilla / IsoFLOP Analysis</h3>
+    <p class="algo-q">How to find compute-optimal $N$ and $D$ given a fixed FLOP budget $C \approx 6ND$?</p>
+    <!-- Add notes: Method 2, U-shaped loss curves, power law fitting, a ≈ b ≈ 0.5 -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Over-Training Economics</h3>
+    <p class="algo-q">When is it cheaper to train a smaller model longer?</p>
+    <p class="algo-hint">$TCO = 6ND + \gamma KN$: inference costs can dominate training costs.</p>
+    <!-- Add notes -->
+  </div>
+
+  <div class="algo-card">
+    <h3>muP (Maximal Update Parametrization)</h3>
+    <p class="algo-q">How to transfer hyperparameters across model scales?</p>
+    <!-- Add notes: width scaling rules, learning rate transfer -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Cosine Schedule Bias</h3>
+    <p class="algo-q">Why does checkpoint reuse from a single long run produce incorrect scaling law estimates?</p>
+    <!-- Add notes: LR dynamics mismatch in truncated runs -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="inference">Inference Optimization</h2>
+  <p style="color:var(--muted);font-size:14px;">Lecture 10</p>
+
+  <div class="algo-card">
+    <h3>Prefill vs Decode Phases</h3>
+    <p class="algo-q">Why is prefill compute-bound while decode is memory-bound?</p>
+    <!-- Add notes: arithmetic intensity analysis, batching strategies -->
+  </div>
+
+  <div class="algo-card">
+    <h3>KV Cache Management</h3>
+    <p class="algo-q">How does KV cache size scale and what are strategies to reduce it?</p>
+    <!-- Add notes: memory formula, paged attention, sliding window -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Speculative Decoding</h3>
+    <p class="algo-q">How to use a small draft model to speed up a large target model?</p>
+    <!-- Add notes: draft-then-verify, acceptance probability, speedup analysis -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Quantization (INT8, INT4)</h3>
+    <p class="algo-q">How does quantization reduce memory and increase throughput with minimal quality loss?</p>
+    <!-- Add notes: absmax, zero-point, GPTQ, AWQ -->
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <h2 id="alignment">Alignment & RL</h2>
+  <p style="color:var(--muted);font-size:14px;">Lectures 15, 16</p>
+
+  <div class="algo-card">
+    <h3>PPO for RLHF</h3>
+    <p class="algo-q">How does PPO optimize a policy against a reward model with a KL penalty?</p>
+    <!-- Add notes: clipped objective, value function, InstructGPT pipeline -->
+  </div>
+
+  <div class="algo-card">
+    <h3>DPO (Direct Preference Optimization)</h3>
+    <p class="algo-q">How does DPO eliminate the reward model by reparametrizing the RL objective?</p>
+    <p class="algo-hint">$L_{DPO} = -\log \sigma\left(\beta \log \frac{\pi_\theta(y_w|x)}{\pi_{ref}(y_w|x)} - \beta \log \frac{\pi_\theta(y_l|x)}{\pi_{ref}(y_l|x)}\right)$</p>
+    <!-- Add derivation -->
+  </div>
+
+  <div class="algo-card">
+    <h3>GRPO (Group Relative Policy Optimization)</h3>
+    <p class="algo-q">How does GRPO use group-level baselines instead of a learned value function?</p>
+    <!-- Add notes: verifiable rewards, reasoning RL, DeepSeek-R1 -->
+  </div>
+
+  <div class="algo-card">
+    <h3>Reward Model Training</h3>
+    <p class="algo-q">How to train a reward model from pairwise human preferences?</p>
+    <!-- Add notes: Bradley-Terry model, preference data collection -->
+  </div>
+
+  <div class="pager"><a href="references.html"><span class="dir">Prev</span><span class="title">Paper References</span></a><span></span></div>
+</main>
+
+<script src="nav.js"></script>
+</body>
+</html>

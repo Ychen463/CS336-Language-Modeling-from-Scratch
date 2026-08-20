@@ -403,6 +403,34 @@ figcaption .ft {
 .tldr ul { margin: 0; padding-left: 18px; }
 .tldr li { font-size: 14.5px; margin: 4px 0; color: #3730a3; }
 
+/* ── Algorithm cards ── */
+.algo-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 16px 20px;
+  margin: 12px 0;
+}
+.algo-card h3 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--fg);
+}
+.algo-q {
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 500;
+  font-style: italic;
+  margin: 0 0 4px;
+}
+.algo-hint {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
 /* ── Pager ── */
 .pager {
   display: flex;
