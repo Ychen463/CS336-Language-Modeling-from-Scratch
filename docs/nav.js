@@ -47,10 +47,34 @@
       html += '<a href="' + href + '"' + cls + '><span class="num">' + num + '</span>' + label + '</a>';
     }
   }
+  // Chinese toggle
+  html += '<div class="zh-toggle">';
+  html += '<label class="toggle-label">';
+  html += '<span class="toggle-text">中文注释</span>';
+  html += '<input type="checkbox" id="zh-switch">';
+  html += '<span class="toggle-slider"></span>';
+  html += '</label>';
+  html += '</div>';
+
   html += '<a href="https://github.com/Ychen463/CS336-Language-Modeling-from-Scratch" target="_blank" class="ghside">GitHub</a>';
 
   var nav = document.getElementById('sidebar');
   if (nav) nav.innerHTML = html;
+
+  // Chinese annotation toggle logic
+  var zhSwitch = document.getElementById('zh-switch');
+  var zhOn = localStorage.getItem('zh-annotations') !== 'off'; // default: on
+  zhSwitch.checked = zhOn;
+  if (!zhOn) document.body.classList.add('hide-zh');
+  zhSwitch.onchange = function () {
+    if (zhSwitch.checked) {
+      document.body.classList.remove('hide-zh');
+      localStorage.setItem('zh-annotations', 'on');
+    } else {
+      document.body.classList.add('hide-zh');
+      localStorage.setItem('zh-annotations', 'off');
+    }
+  };
 
   // Mobile menu button
   var btn = document.createElement('button');
