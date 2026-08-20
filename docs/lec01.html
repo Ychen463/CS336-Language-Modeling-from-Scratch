@@ -16,60 +16,7 @@
   <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">Instructor: Percy</p>
   <div class="lecture-links">Lecture slides: <a href="https://cs336.stanford.edu/lectures/?trace=lecture_01" target="_blank">Interactive lecture ↗</a><br>Recording: <a href="https://www.youtube.com/watch?v=JuoVZkPBiKk" target="_blank">Watch on YouTube ↗</a></div>
 
-  <!-- ── Table of Contents ── -->
-  <details class="toc" open>
-    <summary>Table of Contents</summary>
-    <div class="toc-body">
-      <ol>
-        <li><a href="#tldr">TL;DR</a></li>
-        <li><a href="#key-concepts">Key Concepts</a></li>
-        <li><a href="#part1">Part 1: Why This Course Exists</a>
-          <ul class="toc-sub">
-            <li><a href="#part1">Disconnection problem, industrialization, transferable knowledge</a></li>
-          </ul>
-        </li>
-        <li><a href="#part2">Part 2: LM History &amp; Landscape</a>
-          <ul class="toc-sub">
-            <li><a href="#part2">Timeline, open models, evolution of "language model"</a></li>
-          </ul>
-        </li>
-        <li><a href="#part3">Part 3: Course Logistics</a></li>
-        <li><a href="#part4">Part 4: Course Syllabus &amp; Unit Previews</a>
-          <ul class="toc-sub">
-            <li><a href="#unit1-preview">Basics — Architecture &amp; Training</a></li>
-            <li><a href="#unit2-preview">Systems — Hardware &amp; Parallelism</a></li>
-            <li><a href="#unit2-inference">Systems — Inference</a></li>
-            <li><a href="#unit3-preview">Scaling Laws</a></li>
-            <li><a href="#unit4-preview">Data</a></li>
-            <li><a href="#unit5-preview">Alignment</a></li>
-          </ul>
-        </li>
-        <li><a href="#part5">Part 5: Tokenization</a>
-          <ul class="toc-sub">
-            <li><a href="#part5">Character, Byte, Word, BPE tokenizers</a></li>
-          </ul>
-        </li>
-        <li><a href="#part6">Part 6: Tokenization Trade-off Spectrum</a></li>
-        <li><a href="#part7">Part 7: What Does BPE Optimize?</a>
-          <ul class="toc-sub">
-            <li><a href="#part7">Implicit objective, adaptive computation, tokenizer-free dream</a></li>
-          </ul>
-        </li>
-        <li><a href="#part8">Part 8: Attention Fundamentals</a>
-          <ul class="toc-sub">
-            <li><a href="#part8">Self-attention, Q/K/V, causal masking, multi-head</a></li>
-          </ul>
-        </li>
-        <li><a href="#part9">Part 9: Transformer Architecture Walkthrough</a>
-          <ul class="toc-sub">
-            <li><a href="#part9">Embedding → Blocks → Norm → Linear → Softmax</a></li>
-          </ul>
-        </li>
-        <li><a href="#assignment">Assignment 1 Preview</a></li>
-        <li><a href="#my-notes">My Notes &amp; Questions</a></li>
-      </ol>
-    </div>
-  </details>
+  <div id="toc"></div>
 
   <div class="tldr" id="tldr">
     <h3>TL;DR</h3>
@@ -139,7 +86,7 @@
     </div>
   </div>
 
-  <h2>Notes</h2>
+  <h2 id="notes">Notes</h2>
 
   <!-- ══════════════════════════════════════════════ -->
   <h3 id="part1">Part 1: Why This Course Exists</h3>

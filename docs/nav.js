@@ -127,4 +127,50 @@
   btn.textContent = '\u2630';
   btn.onclick = function () { nav.classList.toggle('open'); };
   document.body.appendChild(btn);
+
+  // ── Auto-generate Table of Contents ──
+  // Scans <main> for headings with id attributes (h2, h3) and builds a TOC.
+  // Insert a <div id="toc"></div> where you want the TOC to appear.
+  var tocContainer = document.getElementById('toc');
+  if (tocContainer && main) {
+    // Only pick h2/h3 with id that are NOT inside .tldr, .toc, or .concepts
+    var allH = main.querySelectorAll('h2[id], h3[id]');
+    var headings = [];
+    for (var fi = 0; fi < allH.length; fi++) {
+      var el = allH[fi];
+      if (!el.closest('.tldr') && !el.closest('.toc') && !el.closest('.concepts')) {
+        headings.push(el);
+      }
+    }
+    if (headings.length > 0) {
+      var tocHtml = '<details class="toc" open><summary>Table of Contents</summary><div class="toc-body"><ol>';
+      var inSub = false;
+      for (var hi = 0; hi < headings.length; hi++) {
+        var h = headings[hi];
+        var text = h.textContent;
+        var id = h.id;
+        if (h.tagName === 'H2') {
+          if (inSub) { tocHtml += '</ul></li>'; inSub = false; }
+          tocHtml += '<li><a href="#' + id + '">' + text + '</a>';
+          // Check if next heading is h3 (sub-items follow)
+          var next = headings[hi + 1];
+          if (next && next.tagName === 'H3') {
+            tocHtml += '<ul class="toc-sub">';
+            inSub = true;
+          } else {
+            tocHtml += '</li>';
+          }
+        } else if (h.tagName === 'H3') {
+          if (!inSub) {
+            tocHtml += '<li><a href="#' + id + '">' + text + '</a><ul class="toc-sub">';
+            inSub = true;
+          }
+          tocHtml += '<li><a href="#' + id + '">' + text + '</a></li>';
+        }
+      }
+      if (inSub) tocHtml += '</ul></li>';
+      tocHtml += '</ol></div></details>';
+      tocContainer.innerHTML = tocHtml;
+    }
+  }
 })();
