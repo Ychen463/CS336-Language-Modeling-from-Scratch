@@ -14,7 +14,7 @@
 <main>
   <p style="font-size:14px;color:var(--muted);">CS336 Notes</p>
   <h1 style="font-size:30px;margin-bottom:4px;">Algorithm Deep Dives</h1>
-  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Key algorithms and derivations from CS336, organized by topic. Click to jump to a section.</p>
+  <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Key algorithms and derivations from CS336. Click each card to expand detailed notes.</p>
 
   <!-- Jump links -->
   <div class="concepts" style="margin-bottom:32px;">
@@ -31,252 +31,1053 @@
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="tokenization">Tokenization & BPE</h2>
-  <p style="color:var(--muted);font-size:14px;">Lectures 01</p>
+  <p style="color:var(--muted);font-size:14px;">Lecture 01</p>
 
-  <div class="algo-card">
-    <h3>BPE Training Algorithm</h3>
-    <p class="algo-q">How to implement BPE efficiently without rescanning the entire corpus on every merge?</p>
-    <!-- Add notes: hash map + linked list approach, complexity analysis -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>BPE Training Algorithm</h3>
+      <p class="algo-q">How to implement BPE efficiently without rescanning the entire corpus on every merge?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Naive Approach</h4>
+      <p>The brute-force method scans the entire corpus to count all adjacent pairs, merges the most frequent one, then rescans. This costs $O(\text{CorpusSize} \times \text{NumMerges})$ — prohibitively slow for large corpora.</p>
 
-  <div class="algo-card">
-    <h3>Deterministic BPE Encoding</h3>
-    <p class="algo-q">How are overlapping candidate pairs resolved during tokenization?</p>
-    <!-- Add notes: greedy rank-based priorities, leftmost-occurrence -->
-  </div>
+      <h4>Efficient Implementation</h4>
+      <ol>
+        <li><strong>Initial pair counting:</strong> Single pass over corpus to build a hash map of all adjacent pair counts.</li>
+        <li><strong>Priority queue:</strong> Insert all pairs into a max-heap keyed by frequency. Pop the top pair to get the next merge.</li>
+        <li><strong>Linked list representation:</strong> Represent each word as a doubly-linked list of tokens. When a pair $(a, b)$ is merged into $ab$:
+          <ul>
+            <li>Walk through all occurrences of $(a, b)$ (tracked via an inverted index)</li>
+            <li>For each occurrence, update the linked list node in $O(1)$</li>
+            <li>Decrement counts of invalidated pairs (e.g., $(prev, a)$ and $(b, next)$)</li>
+            <li>Increment counts of new pairs (e.g., $(prev, ab)$ and $(ab, next)$)</li>
+          </ul>
+        </li>
+      </ol>
 
-  <div class="algo-card">
-    <h3>Pre-tokenization (GPT-2 BPE)</h3>
-    <p class="algo-q">Why split text into "words" before BPE? What problems does it prevent?</p>
-    <!-- Add notes: cross-word merges, leading space, SentencePiece alternatives -->
-  </div>
+      <h4>Complexity</h4>
+      <p>Reduced to approximately $O(C + \sum_{i} \text{occurrences}(\text{pair}_i) \cdot \log P_i)$, where $C$ is the corpus size and $P_i$ is the priority queue size at step $i$.</p>
+
+      <h4>Pseudocode</h4>
+<pre><code>pair_counts = count_all_adjacent_pairs(corpus)   # O(C)
+heap = MaxHeap(pair_counts)
+
+for merge_step in range(num_merges):
+    best_pair = heap.pop()                        # O(log P)
+    new_token = merge(best_pair)
+    for each occurrence of best_pair:
+        update_linked_list(occurrence, new_token)  # O(1)
+        update_neighbor_pair_counts(heap)           # O(log P)
+    add new_token to vocabulary</code></pre>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Deterministic BPE Encoding</h3>
+      <p class="algo-q">How are overlapping candidate pairs resolved during tokenization?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>The Overlap Problem</h4>
+      <p>Given string <code>"abc"</code> with merge rules for both <code>("a","b")</code> and <code>("b","c")</code>, which merge applies first? The character <code>"b"</code> participates in both pairs.</p>
+
+      <h4>Resolution: Rank-Based Greedy</h4>
+      <ol>
+        <li><strong>Rank ordering:</strong> Each merge rule has a rank (the order it was learned during training). Lower rank = higher priority.</li>
+        <li><strong>Greedy left-to-right:</strong> Scan the token sequence, find all applicable pairs, apply the one with the lowest rank first.</li>
+        <li><strong>Repeat:</strong> After each merge, rescan for new applicable pairs until no more merges apply.</li>
+      </ol>
+
+      <h4>Example</h4>
+      <p>If <code>("a","b")</code> has rank 50 and <code>("b","c")</code> has rank 100:</p>
+      <ul>
+        <li><code>["a", "b", "c"]</code> &rarr; merge rank 50 first &rarr; <code>["ab", "c"]</code></li>
+        <li>Now <code>("ab","c")</code> is checked — if it exists in the merge table, apply it; otherwise stop.</li>
+      </ul>
+
+      <blockquote>This greedy rank-based approach ensures deterministic, unambiguous tokenization for any input string.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Pre-tokenization (GPT-2 BPE)</h3>
+      <p class="algo-q">Why split text into "words" before BPE? What problems does it prevent?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Motivation</h4>
+      <p>Without pre-tokenization, BPE can learn cross-word merges like <code>("e", " t")</code>, creating tokens that span word boundaries. This leads to:</p>
+      <ul>
+        <li>Larger, less interpretable vocabularies</li>
+        <li>Poor generalization to unseen word combinations</li>
+      </ul>
+
+      <h4>GPT-2's Regex Pattern</h4>
+      <p>GPT-2 splits text using a regex before applying BPE:</p>
+<pre><code>'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+</code></pre>
+      <p>This isolates contractions, words (with optional leading space), numbers, punctuation, and whitespace.</p>
+
+      <h4>The Leading Space Problem</h4>
+      <p>Because spaces attach to the following word, <code>" world"</code> and <code>"world"</code> become different tokens. The word at the start of a sentence gets tokenized differently than the same word mid-sentence.</p>
+
+      <h4>Modern Alternative: SentencePiece</h4>
+      <p>SentencePiece (used by LLaMA, T5) replaces spaces with a meta-character <code>U+2581</code> (&#9601;) before BPE, treating space as just another character. This eliminates the leading space asymmetry and enables language-agnostic tokenization.</p>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="transformer">Transformer Architecture</h2>
   <p style="color:var(--muted);font-size:14px;">Lectures 03, 04</p>
 
-  <div class="algo-card">
-    <h3>Rotary Position Embeddings (RoPE)</h3>
-    <p class="algo-q">How does RoPE encode relative position using 2D rotation in complex space?</p>
-    <p class="algo-hint">Key idea: $\langle f(q_m, m), f(k_n, n) \rangle = g(q_m, k_n, m-n)$ via rotation matrices.</p>
-    <!-- Add derivation notes -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>Rotary Position Embeddings (RoPE)</h3>
+      <p class="algo-q">How does RoPE encode relative position using 2D rotation in complex space?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Goal</h4>
+      <p>Find an encoding function $f$ such that the attention dot product depends only on the <em>relative</em> position:</p>
+      $$\langle f(q_m, m),\; f(k_n, n) \rangle = g(q_m, k_n, m - n)$$
 
-  <div class="algo-card">
-    <h3>RMSNorm vs LayerNorm</h3>
-    <p class="algo-q">Why does RMSNorm work despite dropping mean-centering? What's the memory bandwidth gain?</p>
-    <!-- Add notes: 3D vs 4D elements, variance-only normalization sufficiency -->
-  </div>
+      <h4>2D Rotation Solution</h4>
+      <p>For a 2D subspace, treat each pair of dimensions as a complex number and apply rotation:</p>
+      $$f(x, m) = x \cdot e^{im\theta}$$
+      <p>The dot product becomes:</p>
+      $$\text{Re}[(q \cdot e^{im\theta}) \cdot \overline{(k \cdot e^{in\theta})}] = \text{Re}[q\bar{k} \cdot e^{i(m-n)\theta}]$$
+      <p>This depends only on $m - n$, achieving relative position encoding.</p>
 
-  <div class="algo-card">
-    <h3>SwiGLU FFN</h3>
-    <p class="algo-q">Why $d_{ff} = \frac{8}{3} d_{model}$? How does input-dependent gating improve over ReLU?</p>
-    <!-- Add derivation: parameter counting, gating mechanism -->
-  </div>
+      <h4>High-Dimensional Extension</h4>
+      <p>For $d$-dimensional heads, pair up dimensions and rotate each pair at a different frequency:</p>
+      $$\theta_j = 10000^{-2j/d_{\text{head}}}, \quad j = 0, 1, \ldots, d_{\text{head}}/2 - 1$$
+      <p>Each dimension pair rotates independently — low-frequency pairs capture long-range position, high-frequency pairs capture local position.</p>
+
+      <h4>Matrix Form</h4>
+      <p>The rotation is applied as a block-diagonal matrix of $2 \times 2$ rotation matrices:</p>
+$$R_m = \begin{pmatrix} \cos m\theta_0 & -\sin m\theta_0 \\ \sin m\theta_0 & \cos m\theta_0 \\ & & \cos m\theta_1 & -\sin m\theta_1 \\ & & \sin m\theta_1 & \cos m\theta_1 \\ & & & & \ddots \end{pmatrix}$$
+
+      <blockquote>RoPE has no learnable parameters — position information is injected purely through geometric rotation, making it simple and effective for length generalization.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>RMSNorm vs LayerNorm</h3>
+      <p class="algo-q">Why does RMSNorm work despite dropping mean-centering? What's the memory bandwidth gain?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>LayerNorm</h4>
+      $$\text{LN}(x) = \gamma \cdot \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta$$
+      <p>Requires computing both mean $\mu$ and variance $\sigma^2$ — two reduction passes over $D$ elements.</p>
+
+      <h4>RMSNorm</h4>
+      $$\text{RMSNorm}(x) = \gamma \cdot \frac{x}{\text{RMS}(x)}, \quad \text{RMS}(x) = \sqrt{\frac{1}{D}\sum_{i=1}^{D} x_i^2}$$
+      <p>Drops mean-centering entirely — only one reduction pass needed.</p>
+
+      <h4>Memory Bandwidth Analysis</h4>
+      <table>
+        <tr><th>Operation</th><th>HBM reads/writes per vector</th></tr>
+        <tr><td>LayerNorm</td><td>$4D$ elements (read $x$, write $\hat{x}$, read $\gamma, \beta$)</td></tr>
+        <tr><td>RMSNorm</td><td>$3D$ elements (read $x$, write $\hat{x}$, read $\gamma$)</td></tr>
+      </table>
+      <p>This 25% I/O reduction translates to <strong>3-7% end-to-end training speedup</strong> despite being a tiny fraction of total FLOPs.</p>
+
+      <h4>Why It Works</h4>
+      <p>The primary benefit of normalization is <em>magnitude control</em> (preventing exploding/vanishing activations). Mean-centering provides marginal additional benefit. Empirically, LLaMA, Chinchilla, and PaLM all use RMSNorm with no quality degradation.</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>SwiGLU FFN</h3>
+      <p class="algo-q">Why $d_{ff} = \frac{8}{3} d_{model}$? How does input-dependent gating improve over ReLU?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Standard ReLU FFN</h4>
+      $$\text{FFN}(x) = W_2 \cdot \text{ReLU}(W_1 x + b_1) + b_2$$
+      <p>Two weight matrices: $W_1 \in \mathbb{R}^{d_{ff} \times d}$, $W_2 \in \mathbb{R}^{d \times d_{ff}}$. Parameter count: $2 \cdot d \cdot d_{ff}$.</p>
+      <p>With $d_{ff} = 4d$: total = $8d^2$ parameters.</p>
+
+      <h4>SwiGLU FFN</h4>
+      $$\text{SwiGLU}(x) = W_2 \cdot [\text{Swish}(W_1 x) \odot (V x)]$$
+      <p>Three weight matrices: $W_1, V \in \mathbb{R}^{d'_{ff} \times d}$, $W_2 \in \mathbb{R}^{d \times d'_{ff}}$. Parameter count: $3 \cdot d \cdot d'_{ff}$.</p>
+
+      <h4>Deriving $d'_{ff} = \frac{8}{3}d$</h4>
+      <p>To match the parameter budget of the ReLU FFN:</p>
+      $$3 \cdot d \cdot d'_{ff} = 8d^2 \implies d'_{ff} = \frac{8}{3}d$$
+
+      <h4>Why Gating Helps</h4>
+      <ul>
+        <li><strong>ReLU:</strong> Static binary gate — neurons either fire or don't, independent of context.</li>
+        <li><strong>SwiGLU:</strong> The gate $Vx$ is <em>input-dependent</em> and <em>continuous</em>, enabling dynamic feature selection. The Swish activation ($x \cdot \sigma(x)$) provides smooth gradients near zero.</li>
+      </ul>
+
+      <blockquote>In practice, $d'_{ff}$ is rounded to the nearest multiple of 256 for hardware efficiency (e.g., tensor core alignment).</blockquote>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="attention">Attention Variants</h2>
   <p style="color:var(--muted);font-size:14px;">Lectures 03, 04, 10</p>
 
-  <div class="algo-card">
-    <h3>MHA vs MQA vs GQA</h3>
-    <p class="algo-q">How does KV cache memory scale across attention variants?</p>
-    <p class="algo-hint">MHA: $O(BNd)$, MQA: $O(BNd/h)$, GQA: $O(BNg \cdot d/h)$</p>
-    <!-- Add notes: memory bandwidth analysis, LLaMA examples -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>MHA vs MQA vs GQA</h3>
+      <p class="algo-q">How does KV cache memory scale across attention variants?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>KV Cache Memory per Layer</h4>
+      <table>
+        <tr><th>Variant</th><th>KV Heads</th><th>Cache Size</th><th>Reduction vs MHA</th></tr>
+        <tr><td>MHA</td><td>$h$</td><td>$2 \cdot B \cdot N \cdot d$</td><td>Baseline</td></tr>
+        <tr><td>MQA</td><td>$1$</td><td>$2 \cdot B \cdot N \cdot (d/h)$</td><td>$1/h$</td></tr>
+        <tr><td>GQA</td><td>$g$</td><td>$2 \cdot B \cdot N \cdot g \cdot (d/h)$</td><td>$g/h$</td></tr>
+      </table>
+      <p>Total across $L$ layers: multiply by $L$ and bytes-per-element (2 for bf16).</p>
 
-  <div class="algo-card">
-    <h3>Multi-head Latent Attention (MLA)</h3>
-    <p class="algo-q">How does DeepSeek's MLA compress KV cache via low-rank projection?</p>
-    <!-- Add notes: latent compression, comparison with GQA -->
-  </div>
+      <h4>Concrete Example: LLaMA-7B</h4>
+      <p>$L=32$, $h=32$, $d=4096$, $N=4096$, batch $B=1$, bf16:</p>
+      <ul>
+        <li><strong>MHA:</strong> $32 \times 2 \times 4096 \times 4096 \times 2 = $ <strong>2.15 GB</strong></li>
+        <li><strong>MQA:</strong> $32 \times 2 \times 4096 \times 128 \times 2 = $ <strong>67 MB</strong> (32x reduction)</li>
+        <li><strong>GQA-8:</strong> $32 \times 2 \times 4096 \times 1024 \times 2 = $ <strong>537 MB</strong> (4x reduction)</li>
+      </ul>
 
-  <div class="algo-card">
-    <h3>Linear Attention & State-Space Models</h3>
-    <p class="algo-q">How do Mamba / linear attention avoid the $O(N^2)$ bottleneck?</p>
-    <!-- Add notes: kernel trick, recurrence form, trade-offs -->
-  </div>
+      <h4>Why This Matters for Inference</h4>
+      <p>During autoregressive decoding, each token generation requires reading the entire KV cache from HBM. Decode is <em>memory-bandwidth bound</em> — reducing KV cache size directly increases tokens/second. GQA provides a practical middle ground: significant cache reduction with minimal quality loss compared to MQA.</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Multi-head Latent Attention (MLA)</h3>
+      <p class="algo-q">How does DeepSeek's MLA compress KV cache via low-rank projection?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Core Idea</h4>
+      <p>Instead of caching full K and V vectors per head, MLA projects them into a shared low-dimensional latent space:</p>
+      $$c_t = W_{DKV} \cdot x_t, \quad c_t \in \mathbb{R}^{d_c}$$
+      <p>where $d_c \ll h \cdot d_h$. Keys and values are reconstructed on-the-fly:</p>
+      $$K = W_{UK} \cdot c_t, \quad V = W_{UV} \cdot c_t$$
+
+      <h4>Cache Size Comparison</h4>
+      <table>
+        <tr><th>Method</th><th>Cache per token per layer</th></tr>
+        <tr><td>MHA</td><td>$2 \cdot h \cdot d_h$</td></tr>
+        <tr><td>GQA-8</td><td>$2 \cdot 8 \cdot d_h$</td></tr>
+        <tr><td>MLA</td><td>$d_c$ (single latent vector)</td></tr>
+      </table>
+      <p>DeepSeek-V2 uses $d_c = 512$ vs $h \cdot d_h = 16384$ for MHA — a <strong>32x compression</strong>.</p>
+
+      <h4>Trade-off</h4>
+      <p>The up-projection ($W_{UK}, W_{UV}$) adds FLOPs during attention computation, but since decode is memory-bound (not compute-bound), this trade-off is favorable.</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Linear Attention & State-Space Models</h3>
+      <p class="algo-q">How do Mamba / linear attention avoid the $O(N^2)$ bottleneck?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Standard Attention: $O(N^2)$</h4>
+      $$\text{Attn}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right) V$$
+      <p>The $N \times N$ attention matrix is the bottleneck for long sequences.</p>
+
+      <h4>Linear Attention: Kernel Trick</h4>
+      <p>Replace softmax with a kernel $\phi$: $\text{Attn}(q_i) = \frac{\sum_j \phi(q_i)^T \phi(k_j) v_j}{\sum_j \phi(q_i)^T \phi(k_j)}$</p>
+      <p>By associativity, compute $S = \sum_j \phi(k_j) v_j^T$ first in $O(Nd^2)$, then $\text{Attn}(q_i) = \phi(q_i)^T S$ in $O(d^2)$ per query. Total: $O(Nd^2)$ — linear in $N$.</p>
+
+      <h4>Mamba (Selective State Space)</h4>
+      <p>Uses a recurrence instead of attention:</p>
+      $$h_t = \bar{A} h_{t-1} + \bar{B} x_t, \quad y_t = C h_t$$
+      <p>Key innovation: parameters $\bar{A}, \bar{B}, C$ are <em>input-dependent</em> (selective), unlike fixed SSMs. This allows content-based filtering while maintaining $O(N)$ sequential computation.</p>
+
+      <h4>Trade-offs</h4>
+      <ul>
+        <li><strong>Pros:</strong> $O(N)$ time and memory, constant-size state for generation</li>
+        <li><strong>Cons:</strong> Cannot do exact retrieval over long contexts (fixed-size state is lossy); parallel training requires scan operations</li>
+      </ul>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="moe">Mixture of Experts</h2>
   <p style="color:var(--muted);font-size:14px;">Lecture 04</p>
 
-  <div class="algo-card">
-    <h3>Top-K Routing & Gradients</h3>
-    <p class="algo-q">How does the Straight-Through Estimator (STE) handle non-differentiable TopK?</p>
-    <!-- Add notes: zero gradients for unselected experts, why load-balancing loss is needed -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>Top-K Routing & Gradients</h3>
+      <p class="algo-q">How does the Straight-Through Estimator (STE) handle non-differentiable TopK?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>The Problem</h4>
+      <p>Given router logits $z = W_r \cdot x$, we compute $p = \text{softmax}(z)$ and select Top-K experts. But TopK is a discrete, non-differentiable operation — how do gradients flow back to the router?</p>
 
-  <div class="algo-card">
-    <h3>Switch Transformer Load Balancing Loss</h3>
-    <p class="algo-q">How does $L_{aux} = \alpha \sum_i f_i \cdot P_i$ create equilibrating pressure?</p>
-    <!-- Add derivation: gradient ∝ (f_k - E[f]) -->
-  </div>
+      <h4>Straight-Through Estimator (STE)</h4>
+      <ul>
+        <li><strong>Forward pass:</strong> Hard binary mask $M \in \{0, 1\}^E$ selects Top-K experts. Output: $y = \sum_{i \in \text{TopK}} g_i \cdot E_i(x)$, where $g_i = p_i / \sum_{j \in \text{TopK}} p_j$.</li>
+        <li><strong>Backward pass:</strong> Pretend the hard selection was soft multiplication. Gradients flow through $g_i$ as if TopK were identity.</li>
+      </ul>
 
-  <div class="algo-card">
-    <h3>Router Z-Loss</h3>
-    <p class="algo-q">Why add a log-sum-exp penalty on router logits for numerical stability?</p>
-    <!-- Add notes: overflow prevention in low-precision, regularizer effect -->
-  </div>
+      <h4>Consequence</h4>
+      <p>Unselected experts receive <strong>zero gradient</strong> — the router never learns to route tokens to underused experts. This creates a "rich get richer" collapse where a few experts handle most tokens.</p>
 
-  <div class="algo-card">
-    <h3>Fine-Grained Expert Scaling</h3>
-    <p class="algo-q">How to achieve $4\times$ parameters with identical inference FLOPs?</p>
-    <p class="algo-hint">Mixtral 8x7B: $N_{fg}$ experts with smaller intermediate dims, parameter count scales by $N_{fg}/K$.</p>
-    <!-- Add derivation -->
-  </div>
+      <blockquote>This is why auxiliary load-balancing losses are essential — they provide gradient signal independent of the TopK selection.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Switch Transformer Load Balancing Loss</h3>
+      <p class="algo-q">How does $L_{aux} = \alpha \sum_i f_i \cdot P_i$ create equilibrating pressure?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Definitions</h4>
+      <ul>
+        <li>$f_i = \frac{\text{tokens routed to expert } i}{T}$ — actual utilization fraction (from hard TopK)</li>
+        <li>$P_i = \frac{1}{T} \sum_{t=1}^{T} p_{i,t}$ — average router probability for expert $i$ (soft, differentiable)</li>
+        <li>$\alpha$ — balancing coefficient (typically $0.01$)</li>
+      </ul>
+
+      <h4>Loss and Gradient</h4>
+      $$L_{aux} = \alpha \cdot N \sum_{i=1}^{N} f_i \cdot P_i$$
+      <p>Since $f_i$ is treated as a constant (stop-gradient), the gradient w.r.t. router logit $z_k$ for token $t$ is:</p>
+      $$\frac{\partial L_{aux}}{\partial z_{k,t}} = \frac{\alpha N \cdot p_{k,t}}{T} \left(f_k - \sum_j f_j \cdot p_{j,t}\right)$$
+
+      <h4>Equilibrating Mechanism</h4>
+      <ul>
+        <li>If expert $k$ is <strong>over-utilized</strong> ($f_k > \bar{f}$): gradient is positive &rarr; pushes $z_k$ down &rarr; reduces routing probability</li>
+        <li>If expert $k$ is <strong>under-utilized</strong> ($f_k < \bar{f}$): gradient is negative &rarr; pushes $z_k$ up &rarr; increases routing probability</li>
+      </ul>
+
+      <blockquote>The product $f_i \cdot P_i$ is key: $f_i$ provides the "where tokens actually went" signal, $P_i$ provides the differentiable path for gradient flow.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Router Z-Loss</h3>
+      <p class="algo-q">Why add a log-sum-exp penalty on router logits for numerical stability?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>The Stability Problem</h4>
+      <p>In bfloat16 training, router logits can grow large, causing overflow in $\text{softmax}(z)$. The max representable value in bf16 is ~$3.39 \times 10^{38}$ ($e^{88}$).</p>
+
+      <h4>Z-Loss Formulation</h4>
+      $$L_z = \frac{\beta}{T} \sum_{t=1}^{T} \left(\log \sum_{i=1}^{N} e^{z_{i,t}}\right)^2$$
+
+      <h4>Gradient Analysis</h4>
+      $$\frac{\partial L_z}{\partial z_{k,t}} = \frac{2\beta}{T} \cdot \text{LSE}(z_t) \cdot p_{k,t}$$
+      <p>This gradient is always positive (during minimization), uniformly pushing all logits toward smaller magnitudes. Experts with higher routing probability ($p_{k,t}$) are penalized more strongly.</p>
+
+      <h4>Why $(\text{LSE})^2$ and Not $|\text{LSE}|$?</h4>
+      <p>The squared form provides stronger gradient when logits are large (where overflow risk is highest) and near-zero gradient when logits are already small (avoiding unnecessary interference with routing decisions).</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Fine-Grained Expert Scaling</h3>
+      <p class="algo-q">How to achieve $4\times$ parameters with identical inference FLOPs?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Standard MoE</h4>
+      <p>$N$ experts, each with FFN intermediate dimension $d_{ff}$. Top-$K$ routing activates $K$ experts per token.</p>
+      <ul>
+        <li>Total parameters: $N \cdot d \cdot d_{ff}$ (in the MoE layer)</li>
+        <li>FLOPs per token: $K \cdot d \cdot d_{ff}$</li>
+      </ul>
+
+      <h4>Fine-Grained Experts</h4>
+      <p>Split each expert into $m$ smaller "sub-experts" with dimension $d_{ff}/m$, giving $N_{fg} = N \cdot m$ total experts. Route Top-$K \cdot m$ of them.</p>
+      <ul>
+        <li>Total parameters: $N_{fg} \cdot d \cdot (d_{ff}/m) = N \cdot d \cdot d_{ff}$ (same!)</li>
+        <li>FLOPs per token: $(K \cdot m) \cdot d \cdot (d_{ff}/m) = K \cdot d \cdot d_{ff}$ (same!)</li>
+      </ul>
+
+      <h4>Mixtral 8x7B Example</h4>
+      <p>8 experts, Top-2 routing. Each expert is 7B-equivalent FFN. Active parameters per token: 2 experts &asymp; 13B. Total parameters: 8 &times; 7B = 47B. This achieves <strong>3.6x parameter count</strong> at roughly <strong>1x inference cost</strong>.</p>
+
+      <h4>Scaling Further</h4>
+      <p>By increasing $N_{fg}$ while keeping $K \cdot d_{ff}/m$ constant, you can scale parameters arbitrarily without increasing per-token FLOPs. The limit is communication overhead and load balancing difficulty.</p>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="kernels">GPU Kernels & FlashAttention</h2>
   <p style="color:var(--muted);font-size:14px;">Lectures 05, 06</p>
 
-  <div class="algo-card">
-    <h3>Online Softmax Algorithm</h3>
-    <p class="algo-q">How to compute softmax in a single pass without knowing the global maximum?</p>
-    <p class="algo-hint">$m_{new} = \max(m^1, m^2)$, $\ell_{new} = e^{m^1 - m_{new}} \ell^1 + e^{m^2 - m_{new}} \ell^2$</p>
-    <!-- Add derivation: running max and denominator update rules -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>Online Softmax Algorithm</h3>
+      <p class="algo-q">How to compute softmax in a single pass without knowing the global maximum?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Standard Softmax: 3 Passes</h4>
+      <ol>
+        <li>Find $m = \max_i x_i$ (pass 1)</li>
+        <li>Compute $\ell = \sum_i e^{x_i - m}$ (pass 2)</li>
+        <li>Output $y_i = e^{x_i - m} / \ell$ (pass 3)</li>
+      </ol>
+      <p>Each pass reads the full vector from HBM — 3 round trips.</p>
 
-  <div class="algo-card">
-    <h3>FlashAttention (Forward)</h3>
-    <p class="algo-q">How does tiled attention avoid materializing the $O(N^2)$ attention matrix?</p>
-    <!-- Add notes: tiling strategy, SRAM usage, IO complexity -->
-  </div>
+      <h4>Online Algorithm: 1 Pass for $m$ and $\ell$</h4>
+      <p>Process elements one at a time, maintaining running statistics:</p>
+<pre><code>m = -inf
+l = 0
+for i in range(N):
+    m_new = max(m, x[i])
+    l = l * exp(m - m_new) + exp(x[i] - m_new)
+    m = m_new</code></pre>
 
-  <div class="algo-card">
-    <h3>FlashAttention Backward (Recomputation)</h3>
-    <p class="algo-q">Why recompute $QK^T$ in the backward pass instead of storing it?</p>
-    <p class="algo-hint">Recompute costs $O(N^2 d_k)$ FLOPs but saves $>2000\times$ memory for $N=4096$.</p>
-    <!-- Add notes: memory-compute trade-off analysis -->
-  </div>
+      <h4>Tiled Extension (for FlashAttention)</h4>
+      <p>When merging two blocks with local statistics $(m^1, \ell^1)$ and $(m^2, \ell^2)$:</p>
+      $$m_{new} = \max(m^1, m^2)$$
+      $$\ell_{new} = e^{m^1 - m_{new}} \cdot \ell^1 + e^{m^2 - m_{new}} \cdot \ell^2$$
+      <p>This allows processing the attention matrix in tiles without ever materializing the full $N \times N$ matrix.</p>
 
-  <div class="algo-card">
-    <h3>Triton Block-Centric Programming</h3>
-    <p class="algo-q">How does Triton differ from CUDA? Why is block-level abstraction advantageous?</p>
-    <!-- Add notes: vectorized offsets vs thread-level indexing, auto memory coalescing -->
-  </div>
+      <h4>Numerical Stability</h4>
+      <p>The subtraction $x_i - m_{new}$ ensures all exponents are $\leq 0$, preventing overflow. The rescaling factor $e^{m^1 - m_{new}}$ corrects previously accumulated statistics when a new maximum is found.</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>FlashAttention (Forward)</h3>
+      <p class="algo-q">How does tiled attention avoid materializing the $O(N^2)$ attention matrix?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Standard Attention IO Cost</h4>
+      <p>Materializing $S = QK^T$ and $P = \text{softmax}(S)$ requires writing $O(N^2)$ to HBM. For $N = 4096, d = 128$: the attention matrix is $4096^2 = 16M$ elements vs. $Q, K, V$ at $4096 \times 128 = 0.5M$ each.</p>
+
+      <h4>FlashAttention Strategy</h4>
+      <ol>
+        <li>Divide $Q$ into blocks of $B_r$ rows, $K, V$ into blocks of $B_c$ rows</li>
+        <li>For each Q-block, iterate over all K/V-blocks:
+          <ul>
+            <li>Load $Q_i, K_j, V_j$ into SRAM (fast on-chip memory)</li>
+            <li>Compute $S_{ij} = Q_i K_j^T$ in SRAM</li>
+            <li>Apply online softmax to update running $m, \ell, O$ for this Q-block</li>
+          </ul>
+        </li>
+        <li>After all K/V-blocks processed, rescale and write final output $O_i$ to HBM</li>
+      </ol>
+
+      <h4>IO Complexity</h4>
+      <table>
+        <tr><th>Method</th><th>HBM Reads/Writes</th></tr>
+        <tr><td>Standard</td><td>$O(Nd + N^2)$</td></tr>
+        <tr><td>FlashAttention</td><td>$O(N^2 d^2 / M)$</td></tr>
+      </table>
+      <p>Where $M$ is SRAM size. For typical values ($M = 100$KB, $d = 128$), FlashAttention is <strong>2-4x faster</strong> and uses <strong>$O(N)$ memory</strong> instead of $O(N^2)$.</p>
+
+      <h4>Block Size Selection</h4>
+      <p>Choose $B_r, B_c$ such that $Q_i, K_j, V_j, S_{ij}$ all fit in SRAM simultaneously:</p>
+      $$B_r \cdot d + B_c \cdot d + B_c \cdot d + B_r \cdot B_c \leq M$$
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>FlashAttention Backward (Recomputation)</h3>
+      <p class="algo-q">Why recompute $QK^T$ in the backward pass instead of storing it?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Standard Backward</h4>
+      <p>The backward pass needs the attention matrix $P = \text{softmax}(QK^T/\sqrt{d})$ to compute gradients. Standard approach: save $P$ during forward ($O(N^2)$ memory).</p>
+
+      <h4>Recomputation Strategy</h4>
+      <p>FlashAttention saves only $O, m, \ell$ from the forward pass ($O(N)$ memory), then recomputes $S_{ij} = Q_i K_j^T$ and $P_{ij}$ block by block during backward.</p>
+
+      <h4>Cost Analysis for $N = 4096, d = 128$</h4>
+      <table>
+        <tr><th>Metric</th><th>Save $P$</th><th>Recompute</th></tr>
+        <tr><td>Memory</td><td>$N^2 = 16M$ elements</td><td>$N \cdot d = 0.5M$ elements</td></tr>
+        <tr><td>Extra FLOPs</td><td>0</td><td>$O(N^2 d)$ (recompute $QK^T$)</td></tr>
+        <tr><td>HBM accesses</td><td>$O(N^2)$ (read saved $P$)</td><td>$O(N^2 d / M)$ (tiled)</td></tr>
+      </table>
+
+      <h4>Why Recompute Wins</h4>
+      <p>Modern GPUs have much more compute than memory bandwidth. Recomputing $QK^T$ costs FLOPs but <em>avoids HBM I/O</em> of the massive $P$ matrix. The tiled recomputation stays in SRAM, making it faster in wall-clock time despite doing more arithmetic.</p>
+
+      <blockquote>Memory savings: $>2000\times$ for $N=4096$. This is what makes training with long contexts feasible.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Triton Block-Centric Programming</h3>
+      <p class="algo-q">How does Triton differ from CUDA? Why is block-level abstraction advantageous?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>CUDA: Thread-Level Programming</h4>
+      <p>In CUDA, you write code for a single thread and manage:</p>
+      <ul>
+        <li>Thread indexing: <code>threadIdx.x, blockIdx.x</code></li>
+        <li>Shared memory allocation and synchronization</li>
+        <li>Memory coalescing (ensuring adjacent threads access adjacent memory)</li>
+        <li>Bank conflicts, warp divergence, register pressure</li>
+      </ul>
+
+      <h4>Triton: Block-Level Programming</h4>
+      <p>In Triton, you write code for an entire <em>block</em> of data:</p>
+<pre><code>@triton.jit
+def add_kernel(x_ptr, y_ptr, out_ptr, N, BLOCK: tl.constexpr):
+    pid = tl.program_id(0)
+    offsets = pid * BLOCK + tl.arange(0, BLOCK)
+    mask = offsets < N
+    x = tl.load(x_ptr + offsets, mask=mask)
+    y = tl.load(y_ptr + offsets, mask=mask)
+    tl.store(out_ptr + offsets, x + y, mask=mask)</code></pre>
+
+      <h4>What Triton Automates</h4>
+      <table>
+        <tr><th>Concern</th><th>CUDA</th><th>Triton</th></tr>
+        <tr><td>Memory coalescing</td><td>Manual</td><td>Automatic</td></tr>
+        <tr><td>Shared memory</td><td>Manual alloc + sync</td><td>Compiler-managed</td></tr>
+        <tr><td>Thread scheduling</td><td>Manual warps</td><td>Compiler-optimized</td></tr>
+        <tr><td>Vectorized loads</td><td>Manual</td><td>From block semantics</td></tr>
+      </table>
+
+      <h4>Key Advantage</h4>
+      <p>The block-level abstraction gives the compiler enough semantic information to automatically optimize memory access patterns. This makes kernel fusion (e.g., fusing LayerNorm + Linear) much easier to write correctly.</p>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="parallelism">Parallelism Strategies</h2>
   <p style="color:var(--muted);font-size:14px;">Lectures 07, 08</p>
 
-  <div class="algo-card">
-    <h3>AllReduce & Collective Operations</h3>
-    <p class="algo-q">What are the communication primitives and their costs?</p>
-    <!-- Add notes: all-reduce, all-gather, reduce-scatter, ring algorithm -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>AllReduce & Collective Operations</h3>
+      <p class="algo-q">What are the communication primitives and their costs?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Core Primitives</h4>
+      <table>
+        <tr><th>Operation</th><th>Description</th><th>Data Volume</th></tr>
+        <tr><td><strong>Broadcast</strong></td><td>One &rarr; All</td><td>$D$</td></tr>
+        <tr><td><strong>Reduce</strong></td><td>All &rarr; One (with op)</td><td>$D$</td></tr>
+        <tr><td><strong>AllReduce</strong></td><td>All &rarr; All (with op)</td><td>$2D \cdot \frac{p-1}{p}$</td></tr>
+        <tr><td><strong>AllGather</strong></td><td>All shards &rarr; All full</td><td>$D \cdot \frac{p-1}{p}$</td></tr>
+        <tr><td><strong>ReduceScatter</strong></td><td>Reduce + Scatter</td><td>$D \cdot \frac{p-1}{p}$</td></tr>
+      </table>
+      <p>Where $D$ = total data size, $p$ = number of GPUs.</p>
 
-  <div class="algo-card">
-    <h3>FSDP / ZeRO-3 Communication Overlap</h3>
-    <p class="algo-q">Why does FSDP have $1.5\times$ communication volume but still scale well?</p>
-    <p class="algo-hint">Pipelining condition: $T_{compute}(L) \geq T_{comm}(L+1)$</p>
-    <!-- Add notes: computation-communication overlap, ZeRO stages -->
-  </div>
+      <h4>Ring AllReduce</h4>
+      <p>Two phases, each taking $(p-1)$ steps:</p>
+      <ol>
+        <li><strong>Reduce-Scatter:</strong> Each GPU sends $D/p$ data to its neighbor. After $p-1$ steps, each GPU holds the fully reduced version of one $D/p$ chunk.</li>
+        <li><strong>AllGather:</strong> Each GPU sends its reduced chunk around the ring. After $p-1$ steps, all GPUs have the complete reduced result.</li>
+      </ol>
+      <p>Total bandwidth: $2D \cdot \frac{p-1}{p}$ — asymptotically $2D$, independent of $p$.</p>
 
-  <div class="algo-card">
-    <h3>Tensor Parallelism in MLP Blocks</h3>
-    <p class="algo-q">How does column-parallel + row-parallel avoid intermediate all_gather?</p>
-    <!-- Add derivation: Y = Σ G_i W_down_i, single all_reduce -->
-  </div>
+      <blockquote>AllReduce = ReduceScatter + AllGather. FSDP exploits this decomposition to overlap communication with computation.</blockquote>
+    </div>
+  </details>
 
-  <div class="algo-card">
-    <h3>Pipeline Parallelism & Microbatching</h3>
-    <p class="algo-q">How to minimize pipeline bubble overhead?</p>
-    <p class="algo-hint">Optimal microbatch count: $m_{opt} = \sqrt{(p-1)B \cdot T_{comp}/T_{ov}}$</p>
-    <!-- Add notes: 1F1B schedule, interleaved stages -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>FSDP / ZeRO-3 Communication Overlap</h3>
+      <p class="algo-q">Why does FSDP have $1.5\times$ communication volume but still scale well?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>ZeRO Stages</h4>
+      <table>
+        <tr><th>Stage</th><th>Shards</th><th>Comm Volume</th></tr>
+        <tr><td>ZeRO-1</td><td>Optimizer states</td><td>$2D$ (same as DDP)</td></tr>
+        <tr><td>ZeRO-2</td><td>+ Gradients</td><td>$2D$</td></tr>
+        <tr><td>ZeRO-3 / FSDP</td><td>+ Parameters</td><td>$3D$</td></tr>
+      </table>
+
+      <h4>Why $3D$ for ZeRO-3?</h4>
+      <ul>
+        <li><strong>Forward:</strong> AllGather parameters before each layer ($D$)</li>
+        <li><strong>Backward:</strong> AllGather parameters again ($D$) + ReduceScatter gradients ($D$)</li>
+        <li>Total: $3D$ vs DDP's $2D$ (the AllReduce)</li>
+      </ul>
+
+      <h4>Pipelining: Hiding the Extra Cost</h4>
+      <p>FSDP overlaps communication with computation across layers:</p>
+<pre><code>Layer L compute  |████████████|
+Layer L+1 gather           |▓▓▓▓|        (overlapped)
+Layer L scatter  |▓▓▓▓|                   (overlapped)</code></pre>
+      <p>Condition for full overlap:</p>
+      $$T_{\text{compute}}(\text{Layer } L) \geq T_{\text{comm}}(\text{Layer } L+1)$$
+      <p>When satisfied, the $1.5\times$ extra communication is completely hidden, and FSDP achieves near-linear scaling.</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Tensor Parallelism in MLP Blocks</h3>
+      <p class="algo-q">How does column-parallel + row-parallel avoid intermediate all_gather?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Setup</h4>
+      <p>MLP: $Y = \sigma(X W_{up}) \cdot W_{down}$, split across $p$ GPUs.</p>
+
+      <h4>Column-Parallel (First Linear)</h4>
+      <p>Split $W_{up}$ along columns: $W_{up} = [W_{up}^1 | W_{up}^2 | \ldots | W_{up}^p]$</p>
+      <p>Each GPU $i$ computes $G_i = \sigma(X W_{up}^i)$ — a <em>partial</em> activation. No communication needed!</p>
+
+      <h4>Row-Parallel (Second Linear)</h4>
+      <p>Split $W_{down}$ along rows (matching the column split):</p>
+      $$Y_i = G_i \cdot W_{down}^i \quad \text{(local partial result)}$$
+      $$Y = \sum_{i=1}^{p} Y_i \quad \text{(AllReduce)}$$
+
+      <h4>Communication Cost</h4>
+      <p>Only <strong>one AllReduce</strong> per MLP block (to sum the partial outputs). Compare with naive approach: AllGather after first linear + AllReduce after second = 2 collectives.</p>
+
+      <h4>Attention TP</h4>
+      <p>Same pattern: split $W_Q, W_K, W_V$ column-wise (each GPU gets a subset of heads), split $W_O$ row-wise. One AllReduce per attention block.</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Pipeline Parallelism & Microbatching</h3>
+      <p class="algo-q">How to minimize pipeline bubble overhead?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>The Bubble Problem</h4>
+      <p>With $p$ pipeline stages, naive sequential execution leaves each GPU idle for $(p-1)/p$ of the time — the "pipeline bubble."</p>
+
+      <h4>Microbatching</h4>
+      <p>Split a batch into $m$ microbatches. Stages can process different microbatches simultaneously:</p>
+<pre><code>GPU 0: |MB1 fwd|MB2 fwd|MB3 fwd|MB4 fwd|MB4 bwd|MB3 bwd|MB2 bwd|MB1 bwd|
+GPU 1:        |MB1 fwd|MB2 fwd|MB3 fwd|MB4 fwd|MB4 bwd|MB3 bwd|MB2 bwd|MB1 bwd|
+                                                                        ^^^^^^^^
+                                                                        bubble</code></pre>
+      <p>Bubble fraction: $\frac{p - 1}{m + p - 1}$. With $m \gg p$, the bubble becomes negligible.</p>
+
+      <h4>1F1B Schedule</h4>
+      <p>Alternate one forward and one backward microbatch in steady state. This limits peak activation memory to $p$ microbatches (instead of $m$).</p>
+
+      <h4>Optimal Microbatch Count</h4>
+      <p>Balancing bubble overhead vs. per-microbatch kernel launch overhead:</p>
+      $$m_{\text{opt}} = \sqrt{\frac{(p-1) \cdot B \cdot T_{\text{comp}}}{T_{\text{overhead}}}}$$
+      <p>Where $T_{\text{overhead}}$ includes kernel launch latency and pipeline synchronization.</p>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="scaling">Scaling Laws</h2>
   <p style="color:var(--muted);font-size:14px;">Lectures 09, 11</p>
 
-  <div class="algo-card">
-    <h3>Kaplan Scaling Laws</h3>
-    <p class="algo-q">How does loss scale as a power law with model size, data, and compute?</p>
-    <!-- Add notes: L(N) ∝ N^(-α), original findings -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>Kaplan Scaling Laws</h3>
+      <p class="algo-q">How does loss scale as a power law with model size, data, and compute?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Core Power Laws (Kaplan et al., 2020)</h4>
+      $$L(N) = \left(\frac{N_c}{N}\right)^\alpha, \quad L(D) = \left(\frac{D_c}{D}\right)^\beta, \quad L(C) = \left(\frac{C_c}{C}\right)^\gamma$$
+      <p>Where $N$ = non-embedding parameters, $D$ = dataset tokens, $C$ = compute (FLOPs).</p>
 
-  <div class="algo-card">
-    <h3>Chinchilla / IsoFLOP Analysis</h3>
-    <p class="algo-q">How to find compute-optimal $N$ and $D$ given a fixed FLOP budget $C \approx 6ND$?</p>
-    <!-- Add notes: Method 2, U-shaped loss curves, power law fitting, a ≈ b ≈ 0.5 -->
-  </div>
+      <h4>Original Findings</h4>
+      <table>
+        <tr><th>Variable</th><th>Exponent</th><th>Value</th></tr>
+        <tr><td>$N$ (parameters)</td><td>$\alpha_N$</td><td>$\approx 0.076$</td></tr>
+        <tr><td>$D$ (data)</td><td>$\alpha_D$</td><td>$\approx 0.095$</td></tr>
+        <tr><td>$C$ (compute)</td><td>$\alpha_C$</td><td>$\approx 0.050$</td></tr>
+      </table>
 
-  <div class="algo-card">
-    <h3>Over-Training Economics</h3>
-    <p class="algo-q">When is it cheaper to train a smaller model longer?</p>
-    <p class="algo-hint">$TCO = 6ND + \gamma KN$: inference costs can dominate training costs.</p>
-    <!-- Add notes -->
-  </div>
+      <h4>Key Insight: Compute-Optimal Allocation</h4>
+      <p>Kaplan found that for a fixed compute budget, most of the budget should go to <strong>model size</strong> (larger $N$) rather than more data ($D$). This led to the "overtrained on data" paradigm — train very large models on relatively little data.</p>
 
-  <div class="algo-card">
-    <h3>muP (Maximal Update Parametrization)</h3>
-    <p class="algo-q">How to transfer hyperparameters across model scales?</p>
-    <!-- Add notes: width scaling rules, learning rate transfer -->
-  </div>
+      <blockquote>Chinchilla later showed this conclusion was wrong due to methodological flaws (cosine schedule bias, insufficient data scaling). The correct ratio is roughly $N \propto D$.</blockquote>
+    </div>
+  </details>
 
-  <div class="algo-card">
-    <h3>Cosine Schedule Bias</h3>
-    <p class="algo-q">Why does checkpoint reuse from a single long run produce incorrect scaling law estimates?</p>
-    <!-- Add notes: LR dynamics mismatch in truncated runs -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>Chinchilla / IsoFLOP Analysis</h3>
+      <p class="algo-q">How to find compute-optimal $N$ and $D$ given a fixed FLOP budget $C \approx 6ND$?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>IsoFLOP Method (Method 2)</h4>
+      <ol>
+        <li>Fix a compute budget $C$</li>
+        <li>Train many models with different $(N, D)$ pairs such that $6ND = C$</li>
+        <li>Plot loss vs. $N$ — observe a U-shaped curve</li>
+        <li>The minimum gives the compute-optimal $N^*(C)$</li>
+        <li>Repeat for multiple values of $C$</li>
+        <li>Fit power law: $N^*(C) = a \cdot C^a$, $D^*(C) = b \cdot C^b$</li>
+      </ol>
+
+      <h4>Chinchilla Result</h4>
+      $$N_{\text{opt}} \propto C^{0.50}, \quad D_{\text{opt}} \propto C^{0.50}$$
+      <p>Both model size and data should scale <strong>equally</strong> with compute. This means:</p>
+      $$D_{\text{opt}} \approx 20 \cdot N_{\text{opt}}$$
+      <p>(roughly 20 tokens per parameter for optimal training)</p>
+
+      <h4>Parametric Loss Model</h4>
+      $$L(N, D) = \frac{A}{N^\alpha} + \frac{B}{D^\beta} + E$$
+      <p>Where $E$ is the irreducible entropy of natural language ($\approx 1.69$ nats for the Chinchilla dataset). Minimizing $L$ subject to $6ND = C$ yields the scaling exponents.</p>
+
+      <h4>Practical Impact</h4>
+      <p>Chinchilla (70B params, 1.4T tokens) matched Gopher (280B params, 300B tokens) at 4x less inference cost, proving that many existing LLMs were significantly undertrained on data.</p>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Over-Training Economics</h3>
+      <p class="algo-q">When is it cheaper to train a smaller model longer?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Total Cost of Ownership</h4>
+      $$\text{TCO} = \underbrace{6ND \cdot c_{\text{train}}}_{\text{Training cost}} + \underbrace{\gamma \cdot K \cdot 2N \cdot c_{\text{infer}}}_{\text{Inference cost}}$$
+      <p>Where $K$ = total inference tokens over model lifetime, $\gamma$ = inference overhead factor.</p>
+
+      <h4>When Inference Dominates</h4>
+      <p>For widely deployed models (ChatGPT-scale), inference costs dwarf training costs. In this regime:</p>
+      <ul>
+        <li>A <strong>smaller</strong> model ($N$) saves inference cost linearly</li>
+        <li>Training it on <strong>more data</strong> ($D \gg 20N$) partially compensates for quality</li>
+        <li>The model is "over-trained" relative to Chinchilla-optimal, but cheaper overall</li>
+      </ul>
+
+      <h4>LLaMA's Strategy</h4>
+      <p>LLaMA-7B was trained on 1T tokens ($D/N \approx 143$, vs Chinchilla's $\approx 20$). This is highly over-trained but produces a smaller, cheaper-to-serve model that performs surprisingly well.</p>
+
+      <blockquote>Chinchilla-optimal minimizes <em>training compute</em>. For real-world deployment, you should minimize <em>total cost</em> including inference, which favors smaller, over-trained models.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>muP (Maximal Update Parametrization)</h3>
+      <p class="algo-q">How to transfer hyperparameters across model scales?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>The Problem</h4>
+      <p>Optimal hyperparameters (learning rate, initialization scale) change with model width $d$. Grid searching at full scale is prohibitively expensive.</p>
+
+      <h4>muP Scaling Rules</h4>
+      <p>muP prescribes how to scale initialization and learning rate so that the optimal HP values remain <strong>constant</strong> across widths:</p>
+      <table>
+        <tr><th>Component</th><th>Standard (SP)</th><th>muP</th></tr>
+        <tr><td>Init scale (hidden layers)</td><td>$1/\sqrt{d}$</td><td>$1/\sqrt{d}$</td></tr>
+        <tr><td>Init scale (output layer)</td><td>$1/\sqrt{d}$</td><td>$1/d$</td></tr>
+        <tr><td>LR (hidden layers)</td><td>$\eta$</td><td>$\eta / d$ (relative to base width)</td></tr>
+        <tr><td>LR (output layer)</td><td>$\eta$</td><td>$\eta$</td></tr>
+        <tr><td>Attention logits</td><td>$1/\sqrt{d_h}$</td><td>$1/d_h$</td></tr>
+      </table>
+
+      <h4>Transfer Recipe</h4>
+      <ol>
+        <li>Choose a small base width $d_{\text{base}}$ (e.g., 256)</li>
+        <li>Grid search hyperparameters at base width (cheap)</li>
+        <li>Apply muP scaling rules to transfer HPs to target width</li>
+      </ol>
+
+      <blockquote>muP ensures that the "feature learning" dynamics remain consistent across scales — the magnitude of weight updates relative to weights stays constant, preventing the model from entering the "lazy" (kernel) regime at large width.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Cosine Schedule Bias</h3>
+      <p class="algo-q">Why does checkpoint reuse from a single long run produce incorrect scaling law estimates?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>The Methodology Flaw</h4>
+      <p>Kaplan's approach: train one model for a long time with cosine LR schedule, take checkpoints at various steps, and treat each checkpoint as a "model trained for $D$ tokens."</p>
+
+      <h4>Why This Is Wrong</h4>
+      <p>A cosine schedule designed for $T$ total steps has a specific LR trajectory. A checkpoint at step $T/2$ has experienced a <em>different</em> LR schedule than a model explicitly trained for $T/2$ steps with its own cosine schedule:</p>
+      <ul>
+        <li><strong>Long run, checkpoint at $T/2$:</strong> LR has only decreased to $\cos(\pi/2) = 0$ of peak — the schedule is "half done"</li>
+        <li><strong>Dedicated $T/2$ run:</strong> LR follows $\cos(\pi \cdot t/(T/2))$, completing a full cosine cycle in half the steps</li>
+      </ul>
+
+      <h4>Impact on Scaling Laws</h4>
+      <p>The reused checkpoints underestimate the loss achievable with dedicated shorter runs, biasing the scaling law toward favoring longer training (more data) over larger models. This partially explains Kaplan's incorrect conclusion that $N$ should scale faster than $D$.</p>
+
+      <h4>Chinchilla's Fix</h4>
+      <p>Trained <strong>separate runs</strong> for each $(N, D)$ configuration, each with its own properly-configured cosine schedule. Modern alternative: use Warmup-Stable-Decay (WSD) schedules, which allow checkpoint reuse since the "stable" phase has constant LR.</p>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="inference">Inference Optimization</h2>
   <p style="color:var(--muted);font-size:14px;">Lecture 10</p>
 
-  <div class="algo-card">
-    <h3>Prefill vs Decode Phases</h3>
-    <p class="algo-q">Why is prefill compute-bound while decode is memory-bound?</p>
-    <!-- Add notes: arithmetic intensity analysis, batching strategies -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>Prefill vs Decode Phases</h3>
+      <p class="algo-q">Why is prefill compute-bound while decode is memory-bound?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Prefill Phase</h4>
+      <p>Process the entire prompt ($N$ tokens) in one forward pass. This is a large matrix multiplication — high arithmetic intensity:</p>
+      $$\text{Arithmetic Intensity} = \frac{2 \cdot N \cdot d^2}{(N + d) \cdot d \cdot \text{bytes}} \approx \frac{2d}{\text{bytes}} \quad \text{(for large $N$)}$$
+      <p>For $d = 4096$, bf16: AI $\approx 4096$ — well above the roofline knee. <strong>Compute-bound.</strong></p>
 
-  <div class="algo-card">
-    <h3>KV Cache Management</h3>
-    <p class="algo-q">How does KV cache size scale and what are strategies to reduce it?</p>
-    <!-- Add notes: memory formula, paged attention, sliding window -->
-  </div>
+      <h4>Decode Phase</h4>
+      <p>Generate one token at a time. Each step is a matrix-vector product ($B = 1$):</p>
+      $$\text{AI} = \frac{2d^2}{d^2 \cdot \text{bytes}} = \frac{2}{\text{bytes}} = 1 \quad \text{(bf16)}$$
+      <p>AI = 1 is far below the roofline knee. <strong>Memory-bandwidth bound.</strong></p>
 
-  <div class="algo-card">
-    <h3>Speculative Decoding</h3>
-    <p class="algo-q">How to use a small draft model to speed up a large target model?</p>
-    <!-- Add notes: draft-then-verify, acceptance probability, speedup analysis -->
-  </div>
+      <h4>Implication</h4>
+      <table>
+        <tr><th>Phase</th><th>Bottleneck</th><th>Optimization</th></tr>
+        <tr><td>Prefill</td><td>Compute (TFLOPs)</td><td>FlashAttention, tensor cores</td></tr>
+        <tr><td>Decode</td><td>Memory bandwidth (TB/s)</td><td>Reduce KV cache, quantization, batching</td></tr>
+      </table>
 
-  <div class="algo-card">
-    <h3>Quantization (INT8, INT4)</h3>
-    <p class="algo-q">How does quantization reduce memory and increase throughput with minimal quality loss?</p>
-    <!-- Add notes: absmax, zero-point, GPTQ, AWQ -->
-  </div>
+      <blockquote>Batching multiple decode requests raises the effective batch size, increasing arithmetic intensity and improving GPU utilization. This is why serving systems batch aggressively.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>KV Cache Management</h3>
+      <p class="algo-q">How does KV cache size scale and what are strategies to reduce it?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>KV Cache Size Formula</h4>
+      $$\text{KV Cache} = 2 \cdot L \cdot n_{kv} \cdot d_h \cdot N \cdot B \cdot \text{bytes}$$
+      <p>Where: $L$ = layers, $n_{kv}$ = KV heads, $d_h$ = head dim, $N$ = sequence length, $B$ = batch size.</p>
+
+      <h4>Reduction Strategies</h4>
+      <table>
+        <tr><th>Strategy</th><th>Mechanism</th><th>Savings</th></tr>
+        <tr><td>GQA</td><td>Share KV heads across Q heads</td><td>$h/g$ reduction</td></tr>
+        <tr><td>MLA</td><td>Low-rank KV compression</td><td>Up to 32x</td></tr>
+        <tr><td>Quantization</td><td>INT8/INT4 KV cache</td><td>2-4x</td></tr>
+        <tr><td>Sliding Window</td><td>Only cache recent $W$ tokens</td><td>$N/W$ reduction</td></tr>
+        <tr><td>PagedAttention</td><td>Non-contiguous memory allocation</td><td>Reduces fragmentation waste</td></tr>
+      </table>
+
+      <h4>PagedAttention (vLLM)</h4>
+      <p>Inspired by OS virtual memory. KV cache is allocated in fixed-size "pages" (blocks of tokens). A page table maps logical positions to physical memory. Benefits:</p>
+      <ul>
+        <li>No pre-allocation waste for variable-length sequences</li>
+        <li>Near-zero memory fragmentation</li>
+        <li>Enables efficient beam search (page sharing across beams)</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Speculative Decoding</h3>
+      <p class="algo-q">How to use a small draft model to speed up a large target model?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Core Idea</h4>
+      <p>Use a fast draft model $M_q$ to generate $\gamma$ candidate tokens, then verify them in parallel with the large target model $M_p$.</p>
+
+      <h4>Algorithm</h4>
+      <ol>
+        <li><strong>Draft:</strong> $M_q$ generates $\gamma$ tokens autoregressively (fast, sequential)</li>
+        <li><strong>Verify:</strong> $M_p$ processes all $\gamma$ tokens in one forward pass (parallel, like prefill)</li>
+        <li><strong>Accept/Reject:</strong> For each position $i$, accept if $q(x_i) \leq p(x_i)$ (always accept if draft model agrees with target). Otherwise, accept with probability $p(x_i)/q(x_i)$ and reject + resample the rest.</li>
+      </ol>
+
+      <h4>Acceptance Rate</h4>
+      <p>Expected accepted tokens per step: $\frac{1 - \alpha^{\gamma+1}}{1 - \alpha}$, where $\alpha$ is the average token acceptance rate.</p>
+
+      <h4>Speedup Analysis</h4>
+      $$\text{Speedup} \approx \frac{\text{Expected accepted tokens}}{1 + \gamma \cdot c}$$
+      <p>Where $c = T_{draft} / T_{target}$ is the cost ratio of draft vs target. Typical speedup: <strong>2-3x</strong> with well-matched draft models.</p>
+
+      <blockquote>Key property: speculative decoding produces the <em>exact same distribution</em> as standard sampling from $M_p$. It's a pure speed optimization with no quality trade-off.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Quantization (INT8, INT4)</h3>
+      <p class="algo-q">How does quantization reduce memory and increase throughput with minimal quality loss?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Absmax Quantization</h4>
+      $$x_q = \text{round}\left(\frac{x}{\max|x|} \cdot (2^{b-1} - 1)\right)$$
+      <p>Maps floating-point values to $[-2^{b-1}+1, 2^{b-1}-1]$. Simple but wastes range if distribution is asymmetric.</p>
+
+      <h4>Zero-Point Quantization</h4>
+      $$x_q = \text{round}\left(\frac{x - x_{\min}}{x_{\max} - x_{\min}} \cdot (2^b - 1)\right)$$
+      <p>Better for asymmetric distributions. Adds a zero-point offset during dequantization.</p>
+
+      <h4>Per-Channel vs Per-Tensor</h4>
+      <p>Outlier features can dominate the quantization range. Per-channel (per output dim) scaling reduces this problem at the cost of more scale factors to store.</p>
+
+      <h4>Advanced Methods</h4>
+      <table>
+        <tr><th>Method</th><th>Key Idea</th></tr>
+        <tr><td><strong>GPTQ</strong></td><td>Layer-wise quantization using second-order (Hessian) information to minimize reconstruction error</td></tr>
+        <tr><td><strong>AWQ</strong></td><td>Activation-aware: protect salient channels (high activation magnitude) with higher precision</td></tr>
+        <tr><td><strong>SmoothQuant</strong></td><td>Transfer quantization difficulty from activations to weights via per-channel scaling</td></tr>
+      </table>
+
+      <h4>Memory & Speed Impact</h4>
+      <ul>
+        <li>INT8: 2x memory reduction, 1.5-2x throughput increase</li>
+        <li>INT4: 4x memory reduction, 2-3x throughput increase</li>
+        <li>Quality: INT8 is nearly lossless; INT4 requires careful calibration (GPTQ/AWQ)</li>
+      </ul>
+    </div>
+  </details>
 
   <!-- ═══════════════════════════════════════ -->
   <h2 id="alignment">Alignment & RL</h2>
   <p style="color:var(--muted);font-size:14px;">Lectures 15, 16</p>
 
-  <div class="algo-card">
-    <h3>PPO for RLHF</h3>
-    <p class="algo-q">How does PPO optimize a policy against a reward model with a KL penalty?</p>
-    <!-- Add notes: clipped objective, value function, InstructGPT pipeline -->
-  </div>
+  <details class="algo-card">
+    <summary>
+      <h3>PPO for RLHF</h3>
+      <p class="algo-q">How does PPO optimize a policy against a reward model with a KL penalty?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>InstructGPT Pipeline</h4>
+      <ol>
+        <li><strong>SFT:</strong> Fine-tune base model on demonstration data</li>
+        <li><strong>Reward Model:</strong> Train on pairwise comparisons $(y_w \succ y_l | x)$</li>
+        <li><strong>RL:</strong> Optimize policy $\pi_\theta$ to maximize reward while staying close to SFT model</li>
+      </ol>
 
-  <div class="algo-card">
-    <h3>DPO (Direct Preference Optimization)</h3>
-    <p class="algo-q">How does DPO eliminate the reward model by reparametrizing the RL objective?</p>
-    <p class="algo-hint">$L_{DPO} = -\log \sigma\left(\beta \log \frac{\pi_\theta(y_w|x)}{\pi_{ref}(y_w|x)} - \beta \log \frac{\pi_\theta(y_l|x)}{\pi_{ref}(y_l|x)}\right)$</p>
-    <!-- Add derivation -->
-  </div>
+      <h4>PPO Objective</h4>
+      $$\max_\theta \; \mathbb{E}_{x, y \sim \pi_\theta} \left[ R(x, y) - \beta \cdot \text{KL}(\pi_\theta \| \pi_{\text{ref}}) \right]$$
+      <p>The KL penalty prevents the policy from "hacking" the reward model by drifting too far from the reference policy.</p>
 
-  <div class="algo-card">
-    <h3>GRPO (Group Relative Policy Optimization)</h3>
-    <p class="algo-q">How does GRPO use group-level baselines instead of a learned value function?</p>
-    <!-- Add notes: verifiable rewards, reasoning RL, DeepSeek-R1 -->
-  </div>
+      <h4>Clipped Surrogate Objective</h4>
+      $$L^{CLIP} = \mathbb{E}\left[\min\left(r_t(\theta) \hat{A}_t, \; \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t\right)\right]$$
+      <p>Where $r_t(\theta) = \pi_\theta(a_t|s_t) / \pi_{\text{old}}(a_t|s_t)$ is the probability ratio.</p>
+      <ul>
+        <li>If advantage $\hat{A}_t > 0$ (good action): clip ratio at $1+\epsilon$ to prevent too-large updates</li>
+        <li>If advantage $\hat{A}_t < 0$ (bad action): clip ratio at $1-\epsilon$</li>
+      </ul>
 
-  <div class="algo-card">
-    <h3>Reward Model Training</h3>
-    <p class="algo-q">How to train a reward model from pairwise human preferences?</p>
-    <!-- Add notes: Bradley-Terry model, preference data collection -->
-  </div>
+      <h4>Practical Notes</h4>
+      <ul>
+        <li>Requires 4 models in memory simultaneously: policy, reference, reward, value (critic)</li>
+        <li>Value function baseline reduces variance of advantage estimates</li>
+        <li>Typical $\beta \approx 0.01$-$0.1$, $\epsilon = 0.2$</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>DPO (Direct Preference Optimization)</h3>
+      <p class="algo-q">How does DPO eliminate the reward model by reparametrizing the RL objective?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Key Insight</h4>
+      <p>The optimal policy for the KL-constrained reward maximization has a closed-form:</p>
+      $$\pi^*(y|x) = \frac{1}{Z(x)} \pi_{\text{ref}}(y|x) \exp\left(\frac{R(y, x)}{\beta}\right)$$
+      <p>Inverting this gives the <strong>implicit reward</strong>:</p>
+      $$R(y, x) = \beta \log \frac{\pi^*(y|x)}{\pi_{\text{ref}}(y|x)} + \beta \log Z(x)$$
+
+      <h4>DPO Loss</h4>
+      <p>Substitute the implicit reward into the Bradley-Terry preference model:</p>
+      $$L_{\text{DPO}}(\theta) = -\mathbb{E}_{(x,y_w,y_l)}\left[\log \sigma\left(\beta \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)} - \beta \log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)}\right)\right]$$
+      <p>The partition function $Z(x)$ cancels in the difference!</p>
+
+      <h4>Gradient Intuition</h4>
+      $$\nabla_\theta L_{\text{DPO}} \propto -\underbrace{\sigma(-\hat{r})}_{\text{scaling}} \left[\nabla_\theta \log \pi_\theta(y_w|x) - \nabla_\theta \log \pi_\theta(y_l|x)\right]$$
+      <ul>
+        <li>Increases probability of preferred response $y_w$</li>
+        <li>Decreases probability of dispreferred response $y_l$</li>
+        <li>Scaling factor $\sigma(-\hat{r})$: gradient is larger when the model currently assigns wrong preferences (hard examples)</li>
+      </ul>
+
+      <h4>Advantages over PPO</h4>
+      <ul>
+        <li>No reward model needed (2 models instead of 4)</li>
+        <li>No online generation during training</li>
+        <li>Stable supervised-learning-style optimization</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>GRPO (Group Relative Policy Optimization)</h3>
+      <p class="algo-q">How does GRPO use group-level baselines instead of a learned value function?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Motivation</h4>
+      <p>PPO requires a value function (critic) — an entire separate model. GRPO eliminates this by using <em>group-relative</em> advantage estimation.</p>
+
+      <h4>Algorithm</h4>
+      <ol>
+        <li>For each prompt $x$, sample a <strong>group</strong> of $G$ responses: $\{y_1, \ldots, y_G\} \sim \pi_{\text{old}}(y|x)$</li>
+        <li>Compute rewards $\{R_1, \ldots, R_G\}$ for each response</li>
+        <li>Compute <strong>group-relative advantage</strong>:
+          $$\hat{A}_i = \frac{R_i - \text{mean}(R_{1:G})}{\text{std}(R_{1:G})}$$
+        </li>
+        <li>PPO-style clipped update using $\hat{A}_i$ as the advantage</li>
+      </ol>
+
+      <h4>Verifiable Rewards</h4>
+      <p>GRPO is particularly effective with <strong>verifiable rewards</strong> — tasks where correctness can be checked automatically (math, code, logic). No reward model needed:</p>
+      <ul>
+        <li>Math: check if final answer matches ground truth</li>
+        <li>Code: run test cases</li>
+        <li>Format: verify response follows required structure</li>
+      </ul>
+
+      <h4>DeepSeek-R1 Recipe</h4>
+      <ol>
+        <li>Start with base model (no SFT)</li>
+        <li>GRPO with verifiable rewards on math/code tasks</li>
+        <li>Model spontaneously develops chain-of-thought reasoning</li>
+        <li>Distill reasoning ability into smaller models via SFT</li>
+      </ol>
+
+      <blockquote>GRPO shows that RL can elicit capabilities (like step-by-step reasoning) that are latent in pretrained models but not visible with standard prompting or SFT.</blockquote>
+    </div>
+  </details>
+
+  <details class="algo-card">
+    <summary>
+      <h3>Reward Model Training</h3>
+      <p class="algo-q">How to train a reward model from pairwise human preferences?</p>
+    </summary>
+    <div class="algo-body">
+      <h4>Bradley-Terry Model</h4>
+      <p>Given preference pair $(y_w \succ y_l | x)$, the probability of the observed preference:</p>
+      $$P(y_w \succ y_l | x) = \sigma(R(x, y_w) - R(x, y_l))$$
+      <p>Where $\sigma$ is the sigmoid function and $R$ is the scalar reward.</p>
+
+      <h4>Training Loss</h4>
+      $$L_{\text{RM}} = -\mathbb{E}_{(x, y_w, y_l)} \left[\log \sigma(R(x, y_w) - R(x, y_l))\right]$$
+
+      <h4>Architecture</h4>
+      <p>Typically: take a pretrained LLM, replace the output head with a single scalar output. The reward is the scalar at the last token position:</p>
+<pre><code>class RewardModel(nn.Module):
+    def __init__(self, base_model):
+        self.base = base_model          # Pretrained LLM
+        self.head = nn.Linear(d, 1)     # Scalar output
+
+    def forward(self, x):
+        h = self.base(x)               # (B, N, d)
+        reward = self.head(h[:, -1])   # (B, 1) - last token
+        return reward</code></pre>
+
+      <h4>Data Collection</h4>
+      <ul>
+        <li>Sample multiple responses per prompt from the SFT model</li>
+        <li>Human annotators rank or compare pairs</li>
+        <li>Each comparison yields one training example $(x, y_w, y_l)$</li>
+        <li>Typical dataset: 50K-500K comparisons</li>
+      </ul>
+
+      <h4>Challenges</h4>
+      <ul>
+        <li><strong>Overoptimization:</strong> Policy can exploit reward model errors — mitigated by KL penalty</li>
+        <li><strong>Annotation noise:</strong> Human disagreement rate is typically 20-30%</li>
+        <li><strong>Distribution shift:</strong> RM trained on SFT outputs may not generalize to RL-optimized outputs</li>
+      </ul>
+    </div>
+  </details>
 
   <div class="pager"><a href="references.html"><span class="dir">Prev</span><span class="title">Paper References</span></a><span></span></div>
 </main>

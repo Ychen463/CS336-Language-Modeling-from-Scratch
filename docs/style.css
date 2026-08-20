@@ -403,33 +403,66 @@ figcaption .ft {
 .tldr ul { margin: 0; padding-left: 18px; }
 .tldr li { font-size: 14.5px; margin: 4px 0; color: #3730a3; }
 
-/* ── Algorithm cards ── */
-.algo-card {
+/* ── Algorithm cards (expandable) ── */
+details.algo-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius) var(--radius) 0;
-  padding: 16px 20px;
   margin: 12px 0;
 }
-.algo-card h3 {
+details.algo-card > summary {
+  padding: 16px 20px;
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+}
+details.algo-card > summary::-webkit-details-marker { display: none; }
+details.algo-card > summary::after {
+  content: '\25B6';
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  font-size: 11px;
+  color: var(--muted);
+  transition: transform .2s;
+}
+details.algo-card[open] > summary::after {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+details.algo-card > summary:hover {
+  background: var(--accent-soft);
+}
+details.algo-card > summary h3 {
   font-size: 15px;
   font-weight: 700;
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: var(--fg);
+  display: inline;
 }
 .algo-q {
   font-size: 14px;
   color: var(--accent);
   font-weight: 500;
   font-style: italic;
-  margin: 0 0 4px;
-}
-.algo-hint {
-  font-size: 13.5px;
-  color: var(--muted);
   margin: 4px 0 0;
 }
+.algo-body {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 0;
+}
+.algo-body h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 16px 0 6px;
+  color: var(--accent);
+}
+.algo-body p { font-size: 14.5px; }
+.algo-body ul, .algo-body ol { font-size: 14.5px; }
+.algo-body table { font-size: 13.5px; }
+.algo-body blockquote { font-size: 14px; }
 
 /* ── Pager ── */
 .pager {
