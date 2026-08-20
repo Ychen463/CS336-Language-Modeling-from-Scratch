@@ -266,6 +266,45 @@
   </blockquote>
 
   <!-- ══════════════════════════════════════════════ -->
+  <h3>Tokenization Mental Framework</h3>
+  <p class="zh">把 Tokenization 记成一个非常简单的框架。以后看到 tokenizer，脑子里想这四件事：</p>
+
+<pre><code>            Raw text / bytes
+                  │
+                  ▼
+             Tokenizer
+                  │
+      ┌───────────┼───────────┐
+      │           │           │
+      ▼           ▼           ▼
+   shorter      bounded      universal
+   sequence     vocabulary   representation
+      │           │           │
+      └───────────┼───────────┘
+                  ▼
+            integer IDs
+                  │
+                  ▼
+              embeddings
+                  │
+                  ▼
+             Transformer</code></pre>
+
+  <p class="zh">所以 tokenization 的终极目标并不是「把句子拆成单词」。更准确地说是：</p>
+
+  <blockquote>
+    <span class="zh">找到一种离散表示，使任意原始输入都可以表示，同时在 <strong>vocabulary size</strong>、<strong>sequence length</strong> 和<strong>模型计算效率</strong>之间取得好的平衡。</span>
+  </blockquote>
+
+  <p class="zh">而 BPE 的核心策略就是：</p>
+
+  <blockquote>
+    <span class="zh">把经常一起出现的 byte / character sequence 合并成一个 token，从而<strong>压缩常见语言模式</strong>。</span>
+  </blockquote>
+
+  <p class="zh">如果你把这一点真正理解了，后面 CS336 让你自己实现 BPE tokenizer 时，就不会觉得自己只是在写一个字符串处理算法——你实际上是在<strong>设计 Transformer 所看到的输入空间和计算粒度</strong>。</p>
+
+  <!-- ══════════════════════════════════════════════ -->
   <h3>Assignment 1 Preview</h3>
   <p>GitHub: <a href="https://github.com/stanford-cs336/assignment1-basics" target="_blank">assignment1-basics ↗</a></p>
   <p class="zh">作业 1 需要从零实现以下内容（不使用框架现成组件）：</p>
