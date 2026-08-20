@@ -163,22 +163,47 @@
         else if (t === 'H3') { cnt[1]++; cnt[2] = 0; nums.push(cnt[0] + '.' + cnt[1]); }
         else { cnt[2]++; nums.push(cnt[0] + '.' + cnt[1] + '.' + cnt[2]); }
       }
-      // Build TOC
+      // Build TOC with proper nesting: child <ul> goes inside parent <li>
       var tocHtml = '<details class="toc" open><summary>Table of Contents</summary><div class="toc-body">';
       var level = 0;
+      var liOpen = false; // tracks whether a <li> is open (waiting for potential children)
       for (var hi = 0; hi < headings.length; hi++) {
         var h = headings[hi];
         var tag = h.tagName;
         var depth = tag === 'H2' ? 1 : tag === 'H3' ? 2 : 3;
-        while (level >= depth) { tocHtml += '</ul>'; level--; }
-        while (level < depth) {
-          var cls = level === 0 ? 'toc-l1' : level === 1 ? 'toc-l2' : 'toc-l3';
-          tocHtml += '<ul class="' + cls + '">';
-          level++;
+        if (depth <= level) {
+          // Close deeper levels and their parent <li>s
+          while (level > depth) { tocHtml += '</ul></li>'; level--; }
+          // Close sibling <li> if open
+          if (liOpen) { tocHtml += '</li>'; liOpen = false; }
+        } else {
+          // Going deeper: open child <ul> inside current <li> (don't close it)
+          while (level < depth) {
+            var cls = level === 0 ? 'toc-l1' : level === 1 ? 'toc-l2' : 'toc-l3';
+            tocHtml += '<ul class="' + cls + '">';
+            level++;
+          }
         }
-        tocHtml += '<li><a href="#' + h.id + '"><span class="toc-num">' + nums[hi] + '</span>' + h.textContent + '</a></li>';
+        tocHtml += '<li><a href="#' + h.id + '"><span class="toc-num">' + nums[hi] + '</span>' + h.textContent + '</a>';
+        liOpen = true;
+        // Check if next heading is deeper — if not, close <li> now
+        var nextDepth = 0;
+        if (hi + 1 < headings.length) {
+          var nt = headings[hi + 1].tagName;
+          nextDepth = nt === 'H2' ? 1 : nt === 'H3' ? 2 : 3;
+        }
+        if (nextDepth <= depth || hi + 1 >= headings.length) {
+          tocHtml += '</li>';
+          liOpen = false;
+        }
       }
-      while (level > 0) { tocHtml += '</ul>'; level--; }
+      // Close any remaining open tags
+      while (level > 0) {
+        if (liOpen) { tocHtml += '</li>'; liOpen = false; }
+        tocHtml += '</ul>';
+        level--;
+        if (level > 0) tocHtml += '</li>';
+      }
       tocHtml += '</div></details>';
       tocContainer.innerHTML = tocHtml;
     }
