@@ -93,18 +93,6 @@ body {
 }
 .sidebar a.active .num { color: rgba(255,255,255,.6); }
 
-.ghside {
-  margin-top: auto;
-  justify-content: center;
-  background: var(--side-hover) !important;
-  color: var(--side-text) !important;
-  font-weight: 600;
-  font-size: 12px !important;
-  margin-top: 12px;
-  border: 1px solid #45475a !important;
-}
-.ghside:hover { border-color: var(--accent-mid) !important; }
-
 /* ── Top header bar (full-width) ── */
 .topbar {
   position: sticky;
@@ -152,8 +140,16 @@ body {
 .topbar-right {
   display: flex;
   align-items: center;
+  gap: 16px;
   flex-shrink: 0;
 }
+.topbar-gh {
+  color: var(--side-muted);
+  transition: color .15s;
+  display: flex;
+  align-items: center;
+}
+.topbar-gh:hover { color: #fff; }
 
 /* ── Main content ── */
 main {
