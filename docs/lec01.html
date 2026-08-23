@@ -336,7 +336,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
   <p class="zh">如果你有 1024 张 GPU 呢？GPU 之间的数据搬运比 GPU 内部更慢，但同样的<strong>「最小化数据搬运」</strong>原则依然适用。</p>
 
   <div style="text-align:center;margin:24px 0;">
-    <img src="images/basics/gpu-node-overview.png" alt="DGX B200 GPU Node Architecture" style="max-width:min(100%,640px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <img src="images/lec01/gpu-node-overview.png" alt="DGX B200 GPU Node Architecture" style="max-width:min(100%,640px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">DGX B200 node: 8 GPUs connected via NVSwitch, 2 CPUs, NVMe storage. GPUs within a node communicate fast (NVLink); between nodes is slower (network).<br><span class="zh">DGX B200 节点：8 张 GPU 通过 NVSwitch 互联，2 个 CPU，NVMe 存储。节点内 GPU 通信快（NVLink），节点间通信慢（网络）。</span></p>
   </div>
 
@@ -373,7 +373,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
   <p class="zh">推理有<strong>两个阶段</strong>，特性截然不同：</p>
 
   <div style="text-align:center;margin:24px 0;">
-    <img src="images/basics/prefill-decode.png" alt="Prefill and Decode Phases" style="max-width:min(100%,600px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <img src="images/lec01/prefill-decode.png" alt="Prefill and Decode Phases" style="max-width:min(100%,600px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">Prefill processes all prompt tokens at once; Decode generates tokens one by one, using KV-Cache to avoid recomputation.<br><span class="zh">预填充一次处理所有 prompt token；解码逐个生成 token，用 KV-Cache 避免重复计算。</span></p>
   </div>
 
@@ -821,7 +821,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
   </blockquote>
 
   <div style="text-align:center;margin:24px 0;">
-    <img src="images/basics/transformer-architecture.png" alt="GPT-style Transformer Architecture" style="max-width:min(100%,720px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <img src="images/lec01/transformer-architecture.png" alt="GPT-style Transformer Architecture" style="max-width:min(100%,720px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">Left: overall model pipeline. Right: inside one Transformer Block.</p>
   </div>
 

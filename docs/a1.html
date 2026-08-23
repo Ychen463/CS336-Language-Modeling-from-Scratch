@@ -139,7 +139,7 @@ total_flops = 6 * 70e9 * 1e12 = 4.2e23 FLOPs</code></pre>
   <p class="zh">理论很重要，但一定要用分析工具验证。<strong>Nsight Systems</strong> 能显示 GPU 上实际发生的情况——核启动时间、内存传输、利用率空白。</p>
 
   <div style="text-align:center;margin:24px 0;">
-    <img src="images/basics/gpu-node-overview.png" alt="DGX B200 GPU Node Architecture" style="max-width:min(100%,640px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <img src="images/lec01/gpu-node-overview.png" alt="DGX B200 GPU Node Architecture" style="max-width:min(100%,640px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">DGX B200 node: 8 GPUs connected via NVSwitch, 2 CPUs, NVMe storage. GPUs within a node communicate fast (NVLink); between nodes is slower (network).<br><span class="zh">DGX B200 节点：8 张 GPU 通过 NVSwitch 互联，2 个 CPU，NVMe 存储。节点内 GPU 通信快（NVLink），节点间通信慢（网络）。</span></p>
   </div>
 
@@ -233,7 +233,7 @@ read HBM → compute A, B, C → write HBM    # single fused kernel</code></pre>
   <p class="zh">推理有两个阶段，特性截然不同：</p>
 
   <div style="text-align:center;margin:24px 0;">
-    <img src="images/basics/prefill-decode.png" alt="Prefill and Decode Phases" style="max-width:min(100%,600px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <img src="images/lec01/prefill-decode.png" alt="Prefill and Decode Phases" style="max-width:min(100%,600px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">Prefill processes all prompt tokens at once; Decode generates tokens one by one, using KV-Cache to avoid recomputation.<br><span class="zh">预填充一次处理所有 prompt token；解码逐个生成 token，用 KV-Cache 避免重复计算。</span></p>
   </div>
 
