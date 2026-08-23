@@ -27,8 +27,23 @@
   </div>
 
   <h2 id="key-concepts">Key Concepts</h2>
-  <div class="concepts">
-    <!-- Add concept cards as you study -->
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">GPU Kernels &amp; Operator Fusion</div>
+    <div class="concepts">
+      <div><strong>Kernel Fusion</strong> — combine multiple elementwise operations into a single GPU kernel to reduce memory bandwidth overhead.<br><span class="zh">核融合——将多个逐元素操作合并为一个 GPU 核，减少显存带宽开销。</span></div>
+      <div><strong>RMSNorm</strong> — Root Mean Square Layer Normalization: $\text{RMSNorm}(x) = \frac{x}{\sqrt{\frac{1}{d}\sum x_i^2 + \epsilon}} \cdot \gamma$. Simpler than LayerNorm (no mean subtraction).<br><span class="zh">均方根归一化：比 LayerNorm 更简单（无需减均值）。</span></div>
+      <div><strong>Triton</strong> — Python-based GPU programming language from OpenAI. Write kernels in Python that compile to optimized GPU code.<br><span class="zh">OpenAI 的 Python GPU 编程语言，用 Python 写核函数并编译为优化的 GPU 代码。</span></div>
+    </div>
+  </div>
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Distributed Training</div>
+    <div class="concepts">
+      <div><strong>Data Parallel (DDP)</strong> — each GPU has full model copy, processes different data, synchronizes gradients via all-reduce.<br><span class="zh">数据并行——每个 GPU 拥有完整模型副本，处理不同数据，通过 all-reduce 同步梯度。</span></div>
+      <div><strong>All-Reduce</strong> — collective communication: sum gradients across all GPUs and broadcast the result back. Ring all-reduce is bandwidth-optimal.<br><span class="zh">集合通信：将所有 GPU 的梯度求和并广播回来。Ring all-reduce 是带宽最优的。</span></div>
+      <div><strong>ZeRO-1 (Optimizer Sharding)</strong> — each GPU stores only 1/N of optimizer states (e.g., Adam's m and v). Reduces memory by ~4× for Adam.<br><span class="zh">每个 GPU 只存 1/N 的优化器状态（如 Adam 的 m 和 v），内存减少约 4 倍。</span></div>
+    </div>
   </div>
 
   <h2 id="notes">Notes</h2>
@@ -40,6 +55,55 @@
     <li><strong>Optimizer state sharding (ZeRO-1)</strong> — each GPU only stores a shard of optimizer states<span class="zh">（优化器状态分片：每个 GPU 只存储一部分优化器状态）</span></li>
     <li><strong>Benchmarking and profiling</strong> — use Nsight Systems to see real GPU utilization<span class="zh">（用 Nsight Systems 查看实际 GPU 利用率）</span></li>
   </ul>
+
+  <h3 id="s2">Fused RMSNorm Kernel</h3>
+
+  <h4 id="s2-1">Why Kernel Fusion?</h4>
+  <p>Naive RMSNorm requires multiple kernel launches: compute sum of squares, compute RMS, normalize, scale. Each launch reads/writes to global memory (HBM).<span class="zh">（朴素 RMSNorm 需要多次核启动，每次都读写全局显存。）</span></p>
+  <p>A <strong>fused kernel</strong> does everything in one pass: reads input once, computes in registers/shared memory, writes output once. This is <em>memory-bound</em>, so reducing memory traffic is the key optimization.<span class="zh">（融合核一次完成所有操作：读入一次，在寄存器/共享内存中计算，写出一次。这是内存瓶颈型操作。）</span></p>
+
+  <h4 id="s2-2">Triton Implementation</h4>
+  <p>Triton operates on <strong>blocks</strong> of data (not individual threads like CUDA). You specify block sizes, and Triton handles thread management, memory coalescing, and vectorization.</p>
+  <p class="zh">Triton 以数据块为单位操作（不像 CUDA 那样操作单个线程）。你指定块大小，Triton 负责线程管理、内存合并和向量化。</p>
+  <p>Key operations: <code>tl.load</code>, <code>tl.store</code>, <code>tl.sum</code>, <code>tl.sqrt</code>. The forward kernel computes the normalized output; the backward kernel computes gradients for both input and the scale parameter $\gamma$.</p>
+
+  <h3 id="s3">Distributed Data Parallel (DDP)</h3>
+
+  <h4 id="s3-1">How DDP Works</h4>
+  <ol>
+    <li>Each GPU gets a full copy of the model<span class="zh">（每个 GPU 获得完整模型副本）</span></li>
+    <li>Each GPU processes a different mini-batch (data parallelism)<span class="zh">（每个 GPU 处理不同的 mini-batch）</span></li>
+    <li>After backward pass, <strong>all-reduce</strong> gradients across GPUs<span class="zh">（反向传播后，跨 GPU all-reduce 梯度）</span></li>
+    <li>Each GPU applies the same optimizer step → models stay synchronized<span class="zh">（每个 GPU 执行相同的优化器步骤 → 模型保持同步）</span></li>
+  </ol>
+
+  <h4 id="s3-2">Overlapping Communication &amp; Computation</h4>
+  <p>Naive DDP: compute all gradients, then all-reduce. Better: <strong>overlap</strong> gradient communication with backward computation using <em>bucketed all-reduce</em> — start communicating early layers' gradients while still computing later layers'.</p>
+  <p class="zh">朴素 DDP：先计算所有梯度，再 all-reduce。更好的方式：使用分桶 all-reduce 将梯度通信与反向计算重叠——在计算后面层的梯度时就开始通信前面层的梯度。</p>
+
+  <h3 id="s4">Optimizer State Sharding (ZeRO-1)</h3>
+  <p>Adam stores 2 extra states per parameter (first moment $m$ and second moment $v$), tripling memory compared to SGD. With $N$ GPUs:</p>
+  <ul>
+    <li>Each GPU stores optimizer states for only $1/N$ of the parameters<span class="zh">（每个 GPU 只存 1/N 参数的优化器状态）</span></li>
+    <li>After all-reduce of gradients, each GPU updates only its shard<span class="zh">（梯度 all-reduce 后，每个 GPU 只更新自己的分片）</span></li>
+    <li>Updated parameters are broadcast back (all-gather)<span class="zh">（更新后的参数通过 all-gather 广播回去）</span></li>
+  </ul>
+  <blockquote>
+    ZeRO-1 trades a small amount of extra communication (all-gather) for a large memory saving (~4× for Adam with fp32 states).<br>
+    <span class="zh">ZeRO-1 用少量额外通信（all-gather）换取大量内存节省（Adam fp32 状态约 4 倍）。</span>
+  </blockquote>
+
+  <h3 id="s5">Benchmarking &amp; Profiling</h3>
+  <p>Use <strong>Nsight Systems</strong> to visualize GPU timelines — see kernel launches, memory transfers, idle time, and communication overlap.</p>
+  <p class="zh">使用 Nsight Systems 可视化 GPU 时间线——查看核启动、内存传输、空闲时间和通信重叠情况。</p>
+  <ul>
+    <li>Compare fused vs. unfused kernel performance (expect significant speedup for memory-bound ops)<span class="zh">（对比融合与非融合核的性能，内存瓶颈操作预期显著加速）</span></li>
+    <li>Verify DDP communication-computation overlap in the timeline<span class="zh">（在时间线中验证 DDP 通信-计算重叠）</span></li>
+    <li>Measure throughput (tokens/sec) scaling with number of GPUs<span class="zh">（测量吞吐量随 GPU 数量的扩展）</span></li>
+  </ul>
+
+  <h3 id="s6">Recommended Reading</h3>
+  <p><strong>How to Scale Your Model</strong> (Google) — lays out how to approach systems for LLMs conceptually. Foregrounds TPUs, but high-level concepts are similar for GPUs.<span class="zh">（概念上介绍如何为 LLM 设计系统。以 TPU 为主，但高层概念与 GPU 类似。）</span></p>
 
   <h3 id="my-notes">My Notes &amp; Questions</h3>
   <!-- Add your personal notes here -->

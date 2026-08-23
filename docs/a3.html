@@ -27,8 +27,22 @@
   </div>
 
   <h2 id="key-concepts">Key Concepts</h2>
-  <div class="concepts">
-    <!-- Add concept cards as you study -->
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Scaling Laws</div>
+    <div class="concepts">
+      <div><strong>Scaling Recipe</strong> — a mapping from FLOPs budget → hyperparameters (model size, tokens, learning rate, etc.). Not a single run, but a <em>recipe</em> that generalizes across scales.<br><span class="zh">缩放配方——从 FLOPs 预算到超参数的映射。不是单次运行，而是可跨规模泛化的配方。</span></div>
+      <div><strong>ISOFLOP Curves</strong> — for a fixed FLOPs budget, plot loss vs. model size to find the optimal $N$. Repeat for multiple budgets to find the scaling trend.<br><span class="zh">等 FLOPs 曲线——固定 FLOPs 预算，画损失 vs 模型大小图找最优 $N$。对多个预算重复。</span></div>
+      <div><strong>Compute-Optimal Scaling</strong> — given $C = 6ND$ FLOPs, the optimal ratio is roughly $D \approx 20N$ (Chinchilla). E.g., 70B params → ~1.4T tokens.<br><span class="zh">计算最优缩放——给定 $C = 6ND$，最优比例约为 $D \approx 20N$。如 70B 参数 → 约 1.4T tokens。</span></div>
+      <div><strong>Predictability over Optimality</strong> — the goal of scaling laws is not just finding the best config, but being able to <em>predict</em> loss before running expensive experiments.<br><span class="zh">可预测性比最优性更重要——缩放定律的目标不仅是找最佳配置，而是在运行昂贵实验前能预测损失。</span></div>
+    </div>
+  </div>
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Hyperparameter Transfer</div>
+    <div class="concepts">
+      <div><strong>µP (Maximal Update Parameterization)</strong> — parameterize the model so that optimal hyperparameters (e.g., learning rate) transfer across scales [Yang+ 2022].<br><span class="zh">最大更新参数化——让最优超参数（如学习率）在不同规模间可迁移。</span></div>
+    </div>
   </div>
 
   <h2 id="notes">Notes</h2>
@@ -40,6 +54,67 @@
     <li><strong>Extrapolate</strong> optimal hyperparameters to larger compute budgets<span class="zh">（将最优超参数外推到更大算力预算）</span></li>
     <li><strong>Predict loss</strong> before running the full-scale experiment (preregistered prediction)<span class="zh">（在运行全尺度实验前预测损失——预注册预测）</span></li>
   </ul>
+
+  <h3 id="s2">Scaling Laws: The Big Picture</h3>
+
+  <h4 id="s2-1">The Core Problem</h4>
+  <p>Setting: if you had $10^{25}$ FLOPs of compute, what hyperparameters would you use to train a good model?<span class="zh">（假设你有 $10^{25}$ FLOPs 的算力，你会用什么超参数来训练一个好模型？）</span></p>
+  <p>Too expensive to do hyperparameter tuning at full scale! The key insight is to think not of a single experiment, but of a <strong>scaling recipe</strong>: a mapping from FLOPs → hyperparameters.</p>
+  <p class="zh">在全规模上做超参数调优太昂贵了！关键见解是不要想单次实验，而是想一个缩放配方：从 FLOPs 到超参数的映射。</p>
+
+  <h4 id="s2-2">How to Build a Scaling Recipe</h4>
+  <ol>
+    <li>Run experiments at various <strong>smaller scales</strong> (e.g., up to $10^{24}$ FLOPs)<span class="zh">（在较小规模上运行实验，如 $10^{24}$ FLOPs 以内）</span></li>
+    <li>Fit a <strong>scaling law</strong> to predict loss at the target scale (e.g., $10^{25}$ FLOPs)<span class="zh">（拟合缩放定律来预测目标规模的损失）</span></li>
+    <li>Optimize the scaling recipe targeting larger scale using small-scale experiments<span class="zh">（用小规模实验优化针对大规模的缩放配方）</span></li>
+    <li><strong>Predict the loss</strong> before actually running the experiment (preregistered prediction)<span class="zh">（在实际运行实验前预测损失——预注册预测）</span></li>
+  </ol>
+
+  <blockquote>
+    Scaling laws don't happen automatically — they require careful construction of a scaling recipe. Parameterize the model in a way to get hyperparameter transfer [Yang+ 2022].<br>
+    <span class="zh">缩放定律不会自动出现——它们需要精心构建缩放配方。用能实现超参数迁移的方式参数化模型。</span>
+  </blockquote>
+
+  <blockquote>
+    Predictability is at least as important as optimality!<br>
+    <span class="zh">可预测性至少和最优性一样重要！</span>
+  </blockquote>
+
+  <h3 id="s3">Compute-Optimal Scaling (Chinchilla)</h3>
+
+  <h4 id="s3-1">The N vs D Tradeoff</h4>
+  <p>Given a FLOPs budget $C = 6ND$, should you use a bigger model ($N$) or train on more tokens ($D$)?</p>
+  <p class="zh">给定 FLOPs 预算 $C = 6ND$，应该用更大的模型（$N$）还是训练更多 token（$D$）？</p>
+
+  <h4 id="s3-2">ISOFLOP Method</h4>
+  <p>Classic compute-optimal scaling laws [Kaplan+ 2020] [Hoffmann+ 2022]:</p>
+  <ol>
+    <li><strong>ISOFLOP curves</strong>: for multiple small FLOPs budgets, sweep model sizes and find the optimal $N$ that minimizes loss<span class="zh">（等 FLOPs 曲线：对多个较小 FLOPs 预算，扫描模型大小找到最小化损失的最优 $N$）</span></li>
+    <li>Fit a scaling law to <strong>extrapolate</strong> optimal $N$ and $D$ to larger FLOPs budgets<span class="zh">（拟合缩放定律将最优 $N$ 和 $D$ 外推到更大 FLOPs 预算）</span></li>
+  </ol>
+
+  <div style="text-align:center;margin:24px 0;">
+    <img src="images/chinchilla-isoflop.png" alt="Left: ISOFLOP curves showing training loss vs parameters for different FLOPs budgets (6e18 to 3e21). Each curve has a U-shape with a clear minimum. Middle: Optimal parameters vs FLOPs follows a power law (e.g., 10^24 FLOPs → 63B params). Right: Optimal tokens vs FLOPs follows a power law (e.g., 10^24 FLOPs → 1.4T tokens)." style="max-width:min(100%,800px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Chinchilla ISOFLOP analysis: (Left) Loss vs parameters for fixed FLOPs budgets — each curve's minimum gives the compute-optimal model size. (Middle/Right) Optimal $N$ and $D$ scale as power laws with FLOPs. [Hoffmann+ 2022]</p>
+  </div>
+
+  <p><strong>TL;DR:</strong> $D = 20N$ is roughly optimal. E.g., a 70B parameter model should be trained on ~1.4T tokens.</p>
+  <p class="zh">简言之：$D = 20N$ 大致最优。例如，70B 参数模型应在约 1.4T tokens 上训练。</p>
+  <p><strong>Caveat:</strong> this doesn't take into account inference costs — in practice, you may want a smaller model trained on more tokens (overtrained), since inference is run many times.</p>
+  <p class="zh">注意：这没有考虑推理成本——实际中你可能想用更小的模型训练更多 token（过度训练），因为推理会运行很多次。</p>
+
+  <h3 id="s4">Live Example: Marin / Delphi</h3>
+  <p>The Delphi Scaling Suite shows scaling law predictions in action across multiple FLOPs budgets (3e18 to 1e22). Key observations:</p>
+  <ul>
+    <li>Each colored curve is a fixed FLOPs budget; the U-shape minimum traces the <strong>compute-optimal frontier</strong> (dashed gray line)<span class="zh">（每条彩色曲线是一个固定 FLOPs 预算；U 形最小值连成计算最优前沿）</span></li>
+    <li>Forecasted points (×) are predicted <em>before</em> running the experiment — the ∆loss shows prediction accuracy<span class="zh">（预测点 × 是在运行实验前预测的——∆loss 表示预测精度）</span></li>
+    <li>At 1e21 FLOPs: ∆loss = +0.011; at 1e22 FLOPs: ∆loss = +0.005 — remarkably accurate predictions<span class="zh">（1e21 FLOPs 预测偏差仅 +0.011，1e22 FLOPs 仅 +0.005——非常准确）</span></li>
+  </ul>
+
+  <div style="text-align:center;margin:24px 0;">
+    <img src="images/delphi-scaling-suite.png" alt="Delphi Scaling Suite Results: Paloma macro loss vs training tokens for FLOPs budgets from 3e18 to 1e22. Each curve shows a U-shape. The compute-optimal frontier (dashed gray) connects the minima. Forecasted points show delta-loss of +0.011 at 1e21 and +0.005 at 1e22. A larger run at ~5e11 tokens is labeled Currently training." style="max-width:min(100%,800px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Delphi Scaling Suite (Marin project): scaling law predictions closely match actual results, with ∆loss as small as +0.005.</p>
+  </div>
 
   <h3 id="my-notes">My Notes &amp; Questions</h3>
   <!-- Add your personal notes here -->
