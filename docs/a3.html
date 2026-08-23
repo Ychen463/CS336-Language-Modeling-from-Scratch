@@ -94,7 +94,7 @@
   </ol>
 
   <div style="text-align:center;margin:24px 0;">
-    <img src="images/chinchilla-isoflop.png" alt="Left: ISOFLOP curves showing training loss vs parameters for different FLOPs budgets (6e18 to 3e21). Each curve has a U-shape with a clear minimum. Middle: Optimal parameters vs FLOPs follows a power law (e.g., 10^24 FLOPs → 63B params). Right: Optimal tokens vs FLOPs follows a power law (e.g., 10^24 FLOPs → 1.4T tokens)." style="max-width:min(100%,800px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <img src="images/scaling/chinchilla-isoflop.png" alt="Left: ISOFLOP curves showing training loss vs parameters for different FLOPs budgets (6e18 to 3e21). Each curve has a U-shape with a clear minimum. Middle: Optimal parameters vs FLOPs follows a power law (e.g., 10^24 FLOPs → 63B params). Right: Optimal tokens vs FLOPs follows a power law (e.g., 10^24 FLOPs → 1.4T tokens)." style="max-width:min(100%,800px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">Chinchilla ISOFLOP analysis: (Left) Loss vs parameters for fixed FLOPs budgets — each curve's minimum gives the compute-optimal model size. (Middle/Right) Optimal $N$ and $D$ scale as power laws with FLOPs. [Hoffmann+ 2022]</p>
   </div>
 
@@ -112,7 +112,7 @@
   </ul>
 
   <div style="text-align:center;margin:24px 0;">
-    <img src="images/delphi-scaling-suite.png" alt="Delphi Scaling Suite Results: Paloma macro loss vs training tokens for FLOPs budgets from 3e18 to 1e22. Each curve shows a U-shape. The compute-optimal frontier (dashed gray) connects the minima. Forecasted points show delta-loss of +0.011 at 1e21 and +0.005 at 1e22. A larger run at ~5e11 tokens is labeled Currently training." style="max-width:min(100%,800px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <img src="images/scaling/delphi-scaling-suite.png" alt="Delphi Scaling Suite Results: Paloma macro loss vs training tokens for FLOPs budgets from 3e18 to 1e22. Each curve shows a U-shape. The compute-optimal frontier (dashed gray) connects the minima. Forecasted points show delta-loss of +0.011 at 1e21 and +0.005 at 1e22. A larger run at ~5e11 tokens is labeled Currently training." style="max-width:min(100%,800px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">Delphi Scaling Suite (Marin project): scaling law predictions closely match actual results, with ∆loss as small as +0.005.</p>
   </div>
 
