@@ -48,12 +48,13 @@
   <h2 id="notes">Notes</h2>
 
   <h3 id="s1">Core Deliverables</h3>
-  <ul>
-    <li><strong>Run training experiments</strong> at multiple scales (model size × tokens)<span class="zh">（在多个规模上运行训练实验）</span></li>
-    <li><strong>Fit power-law scaling laws</strong> to the gathered data points<span class="zh">（对收集的数据点拟合幂律缩放定律）</span></li>
-    <li><strong>Extrapolate</strong> optimal hyperparameters to larger compute budgets<span class="zh">（将最优超参数外推到更大算力预算）</span></li>
-    <li><strong>Predict loss</strong> before running the full-scale experiment (preregistered prediction)<span class="zh">（在运行全尺度实验前预测损失——预注册预测）</span></li>
-  </ul>
+  <p>A training API is provided (hyperparameters → loss) based on previous runs:<span class="zh">（提供一个训练 API：超参数 → 损失，基于历史运行数据。）</span></p>
+  <ol>
+    <li><strong>Submit "training jobs"</strong> under a FLOPs budget and gather data points<span class="zh">（在 FLOPs 预算下提交"训练任务"并收集数据点）</span></li>
+    <li><strong>Fit scaling laws</strong> to the gathered data points<span class="zh">（对收集的数据点拟合缩放定律）</span></li>
+    <li><strong>Submit extrapolated hyperparameters</strong> and loss predictions<span class="zh">（提交外推的超参数和损失预测）</span></li>
+    <li><strong>Leaderboard:</strong> minimize loss given a FLOPs budget<span class="zh">（排行榜：在给定 FLOPs 预算下最小化损失）</span></li>
+  </ol>
 
   <h3 id="s2">Scaling Laws: The Big Picture</h3>
 
@@ -115,6 +116,56 @@
     <img src="images/a2/delphi-scaling-suite.png" alt="Delphi Scaling Suite Results: Paloma macro loss vs training tokens for FLOPs budgets from 3e18 to 1e22. Each curve shows a U-shape. The compute-optimal frontier (dashed gray) connects the minima. Forecasted points show delta-loss of +0.011 at 1e21 and +0.005 at 1e22. A larger run at ~5e11 tokens is labeled Currently training." style="max-width:min(100%,800px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
     <p style="color:var(--muted);font-size:13px;margin-top:8px;">Delphi Scaling Suite (Marin project): scaling law predictions closely match actual results, with ∆loss as small as +0.005.</p>
   </div>
+
+  <h3 id="s5">Data Preview</h3>
+
+  <h4 id="s5-1">Evaluation</h4>
+  <p>What capabilities do we want the model to have? Multilingual? Good at conversation? Agentic coding capabilities?<span class="zh">（我们想让模型具备什么能力？多语言？对话？代理编程？）</span></p>
+  <p>Purpose of evaluation:</p>
+  <ul>
+    <li><strong>Internal:</strong> guide model development — smoothness across scales, relative performance matters<span class="zh">（内部：指导模型开发——跨规模的平滑性，相对性能重要）</span></li>
+    <li><strong>External:</strong> measure absolute quality of a real use case — ecological validity matters<span class="zh">（外部：衡量真实用例的绝对质量——生态效度重要）</span></li>
+  </ul>
+  <p>Examples of evaluations:</p>
+  <ul>
+    <li><strong>Perplexity:</strong> ideally run on private documents not on Internet (avoid contamination)<span class="zh">（困惑度：理想情况下在非互联网的私有文档上运行，避免污染）</span></li>
+    <li><strong>Advanced use cases:</strong> GPQA, HLE, SWE-Bench, Terminal-Bench<span class="zh">（高级用例评估）</span></li>
+  </ul>
+  <blockquote>
+    LMs are general purpose — they require a diverse set of evaluations!<br>
+    <span class="zh">语言模型是通用的——需要多样化的评估集合！</span>
+  </blockquote>
+
+  <h4 id="s5-2">Data Curation</h4>
+  <p>Data does not just fall from the sky. Sources: webpages crawled from the Internet, books, arXiv papers, GitHub code, etc.<span class="zh">（数据不会从天上掉下来。来源：互联网爬取的网页、书籍、arXiv 论文、GitHub 代码等。）</span></p>
+
+  <div style="text-align:center;margin:24px 0;">
+    <img src="images/a3/pile-composition.png" alt="Composition of the Pile by Category: Academic (PubMed Central, ArXiv, FreeLaw, USPTO, Phil, NIH, PMA), Internet (Pile-CC, OpenWebText2, StackExchange, Wikipedia), Prose (Bibliotik, PG-19, BC2), Dialogue (Subtitles, IRC, EP), Misc (Github, DM Math, HN, YT)" style="max-width:min(100%,720px);border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.10);">
+    <p style="color:var(--muted);font-size:13px;margin-top:8px;">Composition of the Pile: diverse data sources across Academic, Internet, Prose, Dialogue, and Misc categories.</p>
+  </div>
+
+  <p>Legal considerations:<span class="zh">（法律层面：）</span></p>
+  <ul>
+    <li>Appeal to fair use to train on copyright data? [Henderson+ 2023]<span class="zh">（援引合理使用来训练版权数据？）</span></li>
+    <li>Might have to license data (e.g., Google with Reddit data)<span class="zh">（可能需要获得数据许可，如 Google 购买 Reddit 数据）</span></li>
+  </ul>
+  <p>Raw data is HTML, PDF, directories — not text. Requires processing.<span class="zh">（原始数据是 HTML、PDF、目录——不是文本，需要处理。）</span></p>
+
+  <h4 id="s5-3">Data Processing</h4>
+  <ul>
+    <li><strong>Transformation:</strong> convert HTML/PDF to text (extract main content)<span class="zh">（转换：将 HTML/PDF 转为文本，提取正文）</span></li>
+    <li><strong>Filtering:</strong> keep high quality data, remove harmful content (via classifiers)<span class="zh">（过滤：保留高质量数据，用分类器移除有害内容）</span></li>
+    <li><strong>Deduplication:</strong> save compute, avoid memorization; use Bloom filters or MinHash<span class="zh">（去重：节省算力，避免记忆化；使用布隆过滤器或 MinHash）</span></li>
+    <li><strong>Data mixing:</strong> how much to upweight/downweight each source? [Liu+ 2024] [Chen+ 2026]<span class="zh">（数据混合：每种来源的权重如何调整？）</span></li>
+    <li><strong>Rewriting / synthetic data:</strong> use LM to augment real data, more similar to downstream tasks [Maini+ 2024]<span class="zh">（改写/合成数据：用 LM 增强真实数据，更接近下游任务）</span></li>
+  </ul>
+
+  <h4 id="s5-4">Types of Data</h4>
+  <ul>
+    <li><strong>Pretraining data:</strong> large and diverse<span class="zh">（预训练数据：大量且多样化）</span></li>
+    <li><strong>Mid-training data:</strong> high quality, including long-context<span class="zh">（中期训练数据：高质量，包含长上下文）</span></li>
+    <li><strong>Post-training data:</strong> supervised fine-tuning — conversations, agentic traces with tool calling<span class="zh">（后训练数据：监督微调——对话、带工具调用的代理轨迹）</span></li>
+  </ul>
 
   <h3 id="my-notes">My Notes &amp; Questions</h3>
   <!-- Add your personal notes here -->
