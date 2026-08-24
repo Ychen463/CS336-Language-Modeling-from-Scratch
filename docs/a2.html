@@ -122,12 +122,25 @@
     <li>Predict the loss at the target scale <em>before</em> actually running the experiment!<span class="zh">（在实际运行实验前预测目标规模的损失！）</span></li>
   </ul>
   <blockquote>
-    Scaling laws don't happen automatically — they require careful construction of a scaling recipe. Parameterize the model to get hyperparameter transfer [Yang+ 2022].<br>
-    <span class="zh">缩放定律不会自动出现——需要精心构建缩放配方。用能实现超参数迁移的方式参数化模型。</span>
+    Scaling laws don't happen automatically — they require careful construction of a scaling recipe.<br>
+    <span class="zh">缩放定律不会自动出现——需要精心构建缩放配方。</span>
   </blockquote>
   <blockquote>
     Predictability is at least as important as optimality!<br>
     <span class="zh">可预测性至少和最优性一样重要！</span>
+  </blockquote>
+
+  <h4 id="s7-2b">Hyperparameter Transfer (µP)</h4>
+  <p>A scaling recipe only works if <strong>hyperparameters transfer across scales</strong> — i.e., the optimal learning rate found at small scale is also (approximately) optimal at large scale. This doesn't happen by default with standard parameterization.<span class="zh">（缩放配方只有在超参数能跨规模迁移时才有效——即小规模找到的最优学习率在大规模也近似最优。标准参数化下这不会自动成立。）</span></p>
+  <p><strong>µP (Maximal Update Parameterization)</strong> [Yang+ 2022] solves this by carefully scaling initialization, learning rates, and multipliers per layer so that the magnitude of activations and updates stays consistent as model width changes. Key ideas:</p>
+  <p class="zh">µP（最大更新参数化）通过精心缩放每层的初始化、学习率和乘子，使激活和更新的幅度在模型宽度变化时保持一致。</p>
+  <ul>
+    <li>Standard parameterization (SP): optimal LR changes with width — can't transfer<span class="zh">（标准参数化：最优 LR 随宽度变化——无法迁移）</span></li>
+    <li>µP: optimal LR is <strong>stable</strong> across widths — tune once at small scale, use at large scale<span class="zh">（µP：最优 LR 在不同宽度间稳定——小规模调一次，大规模直接用）</span></li>
+  </ul>
+  <blockquote>
+    Without hyperparameter transfer, scaling laws are useless — you'd need to re-tune at every scale, defeating the purpose.<br>
+    <span class="zh">没有超参数迁移，缩放定律就没用——你需要在每个规模上重新调参，违背了初衷。</span>
   </blockquote>
 
   <h4 id="s7-3">Compute-Optimal Scaling (Chinchilla)</h4>
