@@ -49,6 +49,7 @@
   <div class="concepts-group">
     <div class="concepts-group-title">Scaling Laws</div>
     <div class="concepts">
+      <div><strong>FLOPs</strong> — Floating Point Operations, total count of add/multiply operations. Measures compute cost of training: $C = 6ND$ where $N$ = parameters, $D$ = tokens, 6 ≈ flops per parameter per token (forward + backward). E.g., 70B params × 1.4T tokens ≈ $5.9 \times 10^{23}$ FLOPs.<br><span class="zh">浮点运算总次数，衡量训练计算量：$C = 6ND$，其中 $N$ = 参数量，$D$ = token 数，6 ≈ 每参数每 token 的浮点运算数（前向+反向）。如 70B × 1.4T ≈ $5.9 \times 10^{23}$。</span></div>
       <div><strong>Scaling Recipe</strong> — a mapping from FLOPs budget → hyperparameters (model size, tokens, LR, etc.). Run small-scale experiments, fit power laws, extrapolate to target scale.<br><span class="zh">缩放配方——从 FLOPs 预算到超参数的映射。在小规模上实验，拟合幂律，外推到目标规模。</span></div>
       <div><strong>µP (Hyperparameter Transfer)</strong> — parameterize the model so optimal hyperparameters (e.g., LR) stay stable across widths. Tune once at small scale, reuse at large scale [Yang+ 2022].<br><span class="zh">最大更新参数化——让最优超参数在不同宽度间稳定。小规模调一次，大规模直接用。</span></div>
       <div><strong>Compute-Optimal Scaling</strong> — given $C = 6ND$ FLOPs, optimal ratio is roughly $D \approx 20N$ (Chinchilla). Caveat: doesn't account for inference costs.<br><span class="zh">计算最优缩放——给定 $C = 6ND$，最优比例约为 $D \approx 20N$。注意：未考虑推理成本。</span></div>
