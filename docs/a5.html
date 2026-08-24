@@ -26,16 +26,85 @@
   </div>
 
   <h2 id="key-concepts">Key Concepts</h2>
-  <div class="concepts">
-    <!-- Add concept cards as you study -->
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Alignment Algorithms</div>
+    <div class="concepts">
+      <div><strong>PPO</strong> (Proximal Policy Optimization) — classic RL algorithm; uses a value function to reduce variance. Standard RLHF approach [Schulman+ 2017] [Ouyang+ 2022].<br><span class="zh">近端策略优化——经典 RL 算法，用价值函数降低方差。标准 RLHF 方法。</span></div>
+      <div><strong>DPO</strong> (Direct Preference Optimization) — reparameterizes the reward model into the policy, directly optimizing on preference pairs (chosen vs rejected). No separate reward model needed [Rafailov+ 2023].<br><span class="zh">直接偏好优化——将奖励模型重参数化到策略中，直接在偏好对上优化。无需单独的奖励模型。</span></div>
+      <div><strong>GRPO</strong> (Group Relative Policy Optimization) — generates a group of responses, scores them, and uses group-relative advantages to update the policy. No value function needed [Shao+ 2024].<br><span class="zh">分组相对偏好优化——生成一组回复，打分，用组内相对优势更新策略。无需价值函数。</span></div>
+    </div>
+  </div>
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Tokenization (Review)</div>
+    <div class="concepts">
+      <div><strong>Tokenizer</strong> — converts strings ↔ tokens (integer indices). Must implement <code>encode</code> and <code>decode</code> with lossless round-trip.<br><span class="zh">分词器——在字符串和 token（整数索引）之间转换。encode 和 decode 必须无损往返。</span></div>
+      <div><strong>BPE</strong> (Byte Pair Encoding) — data-driven heuristic: start from bytes, iteratively merge the most frequent adjacent pair. Controllable vocab size, ~4x compression.<br><span class="zh">字节对编码——数据驱动的启发式方法：从字节开始，迭代合并最高频相邻对。可控词表大小，约 4 倍压缩。</span></div>
+    </div>
   </div>
 
   <h2 id="notes">Notes</h2>
 
   <h3 id="s1">Core Deliverables</h3>
   <ul>
-    <li><strong>DPO</strong> (Direct Preference Optimization) — learn from pairs of preferred/rejected responses without training a separate reward model<span class="zh">（从偏好/拒绝回复对中学习，无需单独训练奖励模型）</span></li>
-    <li><strong>GRPO</strong> (Group Relative Policy Optimization) — generate groups of responses, rank them, update policy to prefer better ones. No value function needed<span class="zh">（生成回复组，排序，更新策略偏好更好的回复。不需要价值函数）</span></li>
+    <li><strong>Implement DPO</strong> (Direct Preference Optimization) — learn from pairs of preferred/rejected responses without training a separate reward model<span class="zh">（从偏好/拒绝回复对中学习，无需单独训练奖励模型）</span></li>
+    <li><strong>Implement GRPO</strong> (Group Relative Policy Optimization) — generate groups of responses, rank them, update policy to prefer better ones. No value function needed<span class="zh">（生成回复组，排序，更新策略偏好更好的回复。不需要价值函数）</span></li>
+  </ul>
+
+  <h3 id="s2">Tokenization Review</h3>
+  <p>This section reviews key tokenization concepts covered in Lecture 01. Inspired by Andrej Karpathy's video on tokenization.<span class="zh">（复习 Lecture 01 的分词概念。灵感来自 Andrej Karpathy 的分词视频。）</span></p>
+
+  <h4 id="s2-1">The Problem</h4>
+  <p>Raw text is Unicode strings. A language model operates on sequences of integer tokens. We need <code>encode(str → list[int])</code> and <code>decode(list[int] → str)</code>.</p>
+  <p class="zh">原始文本是 Unicode 字符串。语言模型操作整数 token 序列。需要 encode 和 decode 两个方法。</p>
+
+  <h4 id="s2-2">Tokenizer Types</h4>
+  <ul>
+    <li><strong>Character-based:</strong> <code>list(map(ord, string))</code> — simple but long sequences, limited to Unicode code points<span class="zh">（基于字符：简单但序列长，限于 Unicode 码位）</span></li>
+    <li><strong>Byte-based:</strong> <code>list(map(int, string.encode("utf-8")))</code> — fixed vocab of 256, but very long sequences<span class="zh">（基于字节：固定 256 词表，但序列非常长）</span></li>
+    <li><strong>Word-based:</strong> large vocab, OOV problems, morphologically blind<span class="zh">（基于单词：词表大，有 OOV 问题，无法处理词形变化）</span></li>
+    <li><strong>BPE:</strong> data-driven, starts from bytes, iteratively merges most frequent pair — the dominant approach<span class="zh">（BPE：数据驱动，从字节开始，迭代合并最高频对——主流方法）</span></li>
+  </ul>
+
+  <h4 id="s2-3">Key Implementation: <code>merge()</code></h4>
+<pre><code>def merge(indices, pair, new_index):
+    """Replace all instances of `pair` with `new_index`."""
+    new_indices, i = [], 0
+    while i < len(indices):
+        if i + 1 < len(indices) and indices[i] == pair[0] and indices[i+1] == pair[1]:
+            new_indices.append(new_index)
+            i += 2
+        else:
+            new_indices.append(indices[i])
+            i += 1
+    return new_indices</code></pre>
+
+  <h4 id="s2-4">BPE Tokenizer Structure</h4>
+<pre><code>@dataclass(frozen=True)
+class BPETokenizerParams:
+    vocab: dict[int, bytes]              # index → bytes
+    merges: dict[tuple[int, int], int]   # (idx1, idx2) → new_idx
+
+class BPETokenizer:
+    def encode(self, string: str) -> list[int]:
+        indices = list(map(int, string.encode("utf-8")))
+        for pair, new_index in self.params.merges.items():
+            indices = merge(indices, pair, new_index)
+        return indices
+
+    def decode(self, indices: list[int]) -> str:
+        return b"".join(self.params.vocab[i] for i in indices).decode("utf-8")</code></pre>
+
+  <h4 id="s2-5">Compression Ratio</h4>
+  <p><code>compression_ratio = num_utf8_bytes / num_tokens</code>. Higher is better — the Transformer sees shorter sequences.<span class="zh">（压缩率 = UTF-8 字节数 / token 数。越高越好——Transformer 看到的序列越短。）</span></p>
+
+  <h4 id="s2-6">Summary</h4>
+  <ul>
+    <li>Character/byte/word tokenization are all highly suboptimal<span class="zh">（字符/字节/单词分词都非常次优）</span></li>
+    <li>BPE is an effective data-driven heuristic<span class="zh">（BPE 是一种有效的数据驱动启发式方法）</span></li>
+    <li>Chunks should be <strong>variable</strong> — allocate more model capacity to interesting/rare content<span class="zh">（分块应该是可变的——对有趣/罕见内容分配更多模型容量）</span></li>
+    <li>Tokenization is a separate step; maybe one day do it end-to-end from bytes...<span class="zh">（分词是独立步骤；也许有一天能从字节端到端处理……）</span></li>
   </ul>
 
   <h3 id="my-notes">My Notes &amp; Questions</h3>

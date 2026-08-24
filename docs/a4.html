@@ -27,19 +27,63 @@
   </div>
 
   <h2 id="key-concepts">Key Concepts</h2>
-  <div class="concepts">
-    <!-- Add concept cards as you study -->
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Data Pipeline</div>
+    <div class="concepts">
+      <div><strong>Transformation</strong> — convert raw HTML/PDF to clean text, extract main content, strip boilerplate.<br><span class="zh">转换——将原始 HTML/PDF 转为干净文本，提取正文，去除模板。</span></div>
+      <div><strong>Quality Filtering</strong> — train classifiers to identify high-quality text and remove low-quality / harmful content.<br><span class="zh">质量过滤——训练分类器识别高质量文本，移除低质量/有害内容。</span></div>
+      <div><strong>MinHash Deduplication</strong> — use locality-sensitive hashing to efficiently find near-duplicate documents. Avoids wasting compute on repeated data and reduces memorization.<br><span class="zh">MinHash 去重——用局部敏感哈希高效发现近重复文档，避免浪费算力和减少记忆化。</span></div>
+      <div><strong>Data Mixing</strong> — optimize the ratio of different sources (web, books, code, etc.) to improve downstream performance [Liu+ 2024] [Chen+ 2026].<br><span class="zh">数据混合——优化不同来源（网页、书籍、代码等）的配比以提升下游性能。</span></div>
+    </div>
+  </div>
+
+  <div class="concepts-group">
+    <div class="concepts-group-title">Alignment (Preview)</div>
+    <div class="concepts">
+      <div><strong>Weak Supervision</strong> — after pretraining with full supervision (next-token prediction), improve the model further using weaker signals. Key insight: it's easier to critique than to generate.<br><span class="zh">弱监督——预训练（下一个 token 预测）后，用较弱的信号进一步改进模型。关键洞见：评判比生成容易。</span></div>
+      <div><strong>RLHF Template</strong> — (1) generate responses, (2) score with human/verifier/LM judge, (3) update model to prefer better responses.<br><span class="zh">RLHF 模板——(1) 生成回复，(2) 用人类/验证器/LM 评判打分，(3) 更新模型偏好更好的回复。</span></div>
+    </div>
   </div>
 
   <h2 id="notes">Notes</h2>
 
   <h3 id="s1">Core Deliverables</h3>
   <ul>
-    <li><strong>HTML → text extraction</strong> from Common Crawl (extract main content, remove boilerplate)<span class="zh">（从 Common Crawl 提取正文，去除模板内容）</span></li>
-    <li><strong>Quality classifier</strong> — train a classifier to identify high-quality text<span class="zh">（训练分类器识别高质量文本）</span></li>
-    <li><strong>Toxicity classifier</strong> — train a classifier to filter harmful content<span class="zh">（训练分类器过滤有害内容）</span></li>
-    <li><strong>MinHash deduplication</strong> — efficiently find and remove near-duplicate documents<span class="zh">（高效发现和移除近重复文档）</span></li>
-    <li><strong>Data mixing</strong> — optimize the ratio of different data sources<span class="zh">（优化不同数据来源的配比）</span></li>
+    <li><strong>Convert Common Crawl HTML to text</strong> — extract main content, remove boilerplate<span class="zh">（从 Common Crawl HTML 提取正文，去除模板内容）</span></li>
+    <li><strong>Train classifiers</strong> to filter for quality and harmful content<span class="zh">（训练分类器过滤质量和有害内容）</span></li>
+    <li><strong>Deduplication using MinHash</strong> — efficiently find and remove near-duplicate documents<span class="zh">（用 MinHash 高效发现和移除近重复文档）</span></li>
+    <li><strong>Leaderboard:</strong> minimize perplexity given a fixed token budget<span class="zh">（排行榜：在固定 token 预算下最小化困惑度）</span></li>
+  </ul>
+
+  <h3 id="s2">Alignment Preview</h3>
+
+  <h4 id="s2-1">Why Weak Supervision?</h4>
+  <p>So far, we have trained a model on full supervision (predict the next token). Now that the model is reasonable, we can improve it further from <strong>weak supervision</strong>.<span class="zh">（到目前为止我们用完全监督训练模型。现在模型已经不错了，可以用弱监督进一步改进。）</span></p>
+  <blockquote>
+    Why weak supervision? When it is easier to critique than to generate.<br>
+    <span class="zh">为什么用弱监督？因为评判比生成容易。</span>
+  </blockquote>
+
+  <h4 id="s2-2">Basic Template</h4>
+  <ol>
+    <li><strong>Generate</strong> responses from the model<span class="zh">（从模型生成回复）</span></li>
+    <li><strong>Score</strong> responses with a human, verifier, or LM judge<span class="zh">（用人类、验证器或 LM 评判对回复打分）</span></li>
+    <li><strong>Update</strong> the model to prefer better responses<span class="zh">（更新模型偏好更好的回复）</span></li>
+  </ol>
+
+  <h4 id="s2-3">Algorithms</h4>
+  <ul>
+    <li><strong>PPO</strong> (Proximal Policy Optimization) — classic RL algorithm for alignment [Schulman+ 2017] [Ouyang+ 2022]<span class="zh">（近端策略优化——经典 RL 对齐算法）</span></li>
+    <li><strong>DPO</strong> (Direct Preference Optimization) — for preference data, simpler than PPO [Rafailov+ 2023]<span class="zh">（直接偏好优化——针对偏好数据，比 PPO 更简单）</span></li>
+    <li><strong>GRPO</strong> (Group Relative Preference Optimization) — removes the value function entirely [Shao+ 2024]<span class="zh">（分组相对偏好优化——完全去掉价值函数）</span></li>
+  </ul>
+
+  <h4 id="s2-4">Challenges</h4>
+  <ul>
+    <li>RL algorithms are <strong>unstable and hard to tune</strong><span class="zh">（RL 算法不稳定且难以调优）</span></li>
+    <li>At scale, requires a lot of new <strong>infrastructure</strong> (inference with async rollouts)<span class="zh">（大规模需要大量新基础设施——异步推理 rollout）</span></li>
+    <li>Constantly trading off <strong>systems efficiency</strong> and <strong>on-policyness</strong><span class="zh">（持续在系统效率和策略一致性之间权衡）</span></li>
   </ul>
 
   <h3 id="my-notes">My Notes &amp; Questions</h3>
